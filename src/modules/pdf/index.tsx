@@ -5,6 +5,8 @@ import { computeRenderWindow, computeVisiblePage } from './virtualization';
 import { useDisplayPages } from "./display";
 import type { RenderWindow } from './display';
 import addScrollListener from './addScrollListener';
+import { fillRandomSquares } from '../world';
+import type { Coord } from '../world';
 
 
 const renderedPagesMap: Map<number, HTMLDivElement> = new Map();
@@ -15,8 +17,15 @@ function Pdf() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const visiblePagesRef = useRef<number>(0);
-  const scrollTopRef = useRef<number>(0);
   const currentVisiblePageRef = useRef<number>(1);
+  const [cameraCoord, setCameraCoord] = useState<Coord>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const world = containerRef.current?.children[0] as HTMLDivElement;
+    if (world) {
+      fillRandomSquares(world, setCameraCoord);
+    }
+  }, []);
 
   //get doc metadata
   const { doc, pageCount, pageHeight } = useUploadDoc(file);
@@ -48,13 +57,26 @@ function Pdf() {
     if (!files) return;
     setFile(files[0]);
   }
+
   return (
     <div>
       <p>Upload a pdf</p>
       <input className="border border-white" type="file" onChange={(e) => uploadFile(e)} />
       <p>pages: {pageCount}</p>
-      <p>scroll top: {scrollTopRef.current}</p>
-      <div className="flex flex-col items-center" ref={containerRef} />
+      {cameraCoord && (
+        <>
+          <p>Camera x,y: {cameraCoord.x}, {cameraCoord.y}</p>
+        </>
+      )}
+      <div id="viewport" className="relative overflow-hidden bg-gray-300 m-5 h-[500px] w-[1000px]" ref={containerRef}>
+        <div
+          style={{
+            transform: `translate(${cameraCoord.x}px, ${cameraCoord.y}px)`
+          }}
+          className="relative bg-slate-700 h-[10000px] w-[10000px]"
+        >
+        </div>
+      </div>
     </div>
   )
 }
