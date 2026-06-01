@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import './App.css'
 import { usePdf } from "./modules/pdf";
-import { centerWorldToCamera, useInitControls } from "./modules/world";
+import { centerWorldToCamera, useInitControls } from "./modules/world/controls";
 import { entities, makeRandomSquares } from "./modules/world/objects";
 import { entitiesToRender, type RenderSurface } from "./modules/world/renderer";
-import type { Coord } from "./modules/world";
+import type { Coord } from "./modules/world/controls";
 
 function addPointToOrigin(parent: HTMLDivElement) {
   const point = document.getElementById("origin-point");
@@ -22,7 +22,7 @@ function addPointToOrigin(parent: HTMLDivElement) {
 
 function App() {
   const { pageCount, uploadFile, containerRef: worldRef } = usePdf();
-  const [cameraCoord, _setCameraCoord] = useState<Coord>({ x: 0, y: 0 });
+  const [cameraCoord, setCameraCoord] = useState<Coord>({ x: 0, y: 0 });
 
   useEffect(() => {
     const world = worldRef.current;
@@ -30,6 +30,12 @@ function App() {
       makeRandomSquares();
       addPointToOrigin(world);
       centerWorldToCamera(world);
+    }
+  }, []);
+  useInitControls(worldRef, setCameraCoord);
+  useEffect(() => {
+    const world = worldRef.current;
+    if (world) {
       const renderSurface: RenderSurface = {
         div: world,
         height: world.clientHeight,
@@ -38,9 +44,8 @@ function App() {
       }
       entitiesToRender(entities, renderSurface, cameraCoord);
     }
-  }, []);
+  }, [cameraCoord]);
 
-  useInitControls();
   return (
     <div className="min-h-screen flex flex-col items-center ">
       <p>Upload a pdf</p>
@@ -54,9 +59,6 @@ function App() {
       <div id="viewport" className="relative overflow-hidden bg-gray-300 m-5 h-[1000px] w-[1000px]">
         <div
           id="world"
-          style={{
-            transform: `translate(${cameraCoord.x}px, ${cameraCoord.y}px)`
-          }}
           className="relative bg-slate-700 h-[1250px] w-[1250px]" ref={worldRef}
         >
           <div id="origin-point"></div>

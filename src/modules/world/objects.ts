@@ -1,6 +1,5 @@
 import { randomIdGenerator } from "../../utils";
-import type { Coord } from ".";
-import type { RefObject } from "react";
+import type { Coord } from "./controls";
 
 export type EntityStore = Map<string, Entity>;
 export const entities: EntityStore = new Map();
@@ -19,14 +18,13 @@ export function createEntity(x: number, y: number, height: number, width: number
   const id = randomIdGenerator();
   const entity: Entity = {
     id,
-    worldCoord: { x, y },
+    worldCoord: { x: x, y: y },
     height,
     width,
     type: "cube",
     isRendered: false,
     container
   }
-
   return entity;
 }
 
