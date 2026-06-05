@@ -1,10 +1,6 @@
 import { useEffect, type RefObject } from "react";
-import { createEntity, type Entity } from "./objects";
+import type { Entity, Coord } from "../../types";
 
-export type Coord = {
-  x: number;
-  y: number
-}
 
 
 //Camera stuff

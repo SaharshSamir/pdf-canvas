@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import './App.css'
 import { usePdf } from "./modules/pdf";
 import { centerWorldToCamera, useInitControls } from "./modules/world/controls";
-import { entities, makeRandomSquares } from "./modules/world/objects";
+import { createPageEntities, entities } from "./modules/world/objects";
 import { entitiesToRender, type RenderSurface } from "./modules/world/renderer";
-import type { Coord } from "./modules/world/controls";
+import type { Coord } from "./types";
 
 function addPointToOrigin(parent: HTMLDivElement) {
   const point = document.getElementById("origin-point");
@@ -19,19 +19,39 @@ function addPointToOrigin(parent: HTMLDivElement) {
 
 }
 
+//given the doc, go thru all it's pages and make entities out of them 
+//and add em to the entity store
 
 function App() {
-  const { pageCount, uploadFile, containerRef: worldRef } = usePdf();
+  const { pageCount, uploadFile, doc, pageHeight, pageWidth } = usePdf();
   const [cameraCoord, setCameraCoord] = useState<Coord>({ x: 0, y: 0 });
+  const worldRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const world = worldRef.current;
     if (world) {
-      makeRandomSquares();
       addPointToOrigin(world);
       centerWorldToCamera(world);
     }
   }, []);
+  useEffect(() => {
+    async function createAndRenderPages() {
+      if (!doc) return;
+      await createPageEntities(doc, pageHeight, pageWidth);
+      const world = worldRef.current;
+      if (world) {
+        const renderSurface: RenderSurface = {
+          div: world,
+          height: world.clientHeight,
+          width: world.clientWidth,
+          center: cameraCoord
+        }
+        await entitiesToRender(entities, renderSurface, cameraCoord);
+      }
+    }
+    createAndRenderPages();
+
+  }, [pageCount]);
   useInitControls(worldRef, setCameraCoord);
   useEffect(() => {
     const world = worldRef.current;
@@ -69,3 +89,5 @@ function App() {
 }
 
 export default App
+
+

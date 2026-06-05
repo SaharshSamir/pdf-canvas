@@ -7,6 +7,7 @@ export function useUploadDoc(file: File | null) {
 
   const documentRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
   const pageHeightRef = useRef<number>(0);
+  const pageWidthRef = useRef<number>(0);
 
   useEffect(() => {
     const load = async () => {
@@ -16,9 +17,12 @@ export function useUploadDoc(file: File | null) {
 
       documentRef.current = doc;
 
-      const pageHeight = (await doc.getPage(1)).getViewport({ scale: 1 }).height;
+      const pageViewport = (await doc.getPage(1)).getViewport({ scale: 1 });
+      const pageHeight = pageViewport.height;
+      const pageWidth = pageViewport.width;
 
       pageHeightRef.current = pageHeight;
+      pageWidthRef.current = pageHeight;
 
       setPageCount(doc.numPages);
     }
@@ -29,6 +33,7 @@ export function useUploadDoc(file: File | null) {
     return {
       doc: null,
       pageHeight: 0,
+      pageWidth: 0,
       pageCount: 0
     }
   }
@@ -36,6 +41,7 @@ export function useUploadDoc(file: File | null) {
   return {
     doc: documentRef.current,
     pageHeight: pageHeightRef.current,
+    pageWidth: pageWidthRef.current,
     pageCount,
   }
 }

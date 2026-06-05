@@ -1,18 +1,9 @@
 import { randomIdGenerator } from "../../utils";
-import type { Coord } from "./controls";
+import type { Coord, EntityStore, Entity } from "../../types";
+import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 
-export type EntityStore = Map<string, Entity>;
 export const entities: EntityStore = new Map();
 
-export type Entity = {
-  id: string;
-  worldCoord: Coord;
-  height: number;
-  width: number
-  isRendered: boolean;
-  container?: HTMLDivElement;
-  type?: "cube" | "page" | "text";
-}
 
 export function createEntity(x: number, y: number, height: number, width: number, container: HTMLDivElement): Entity {
   const id = randomIdGenerator();
@@ -75,4 +66,25 @@ export function makeRandomSquares(
 
   entities.set(entity.id, entity);
 
+}
+
+export async function createPageEntities(doc: PDFDocumentProxy, pageHeight: number, pageWidth: number) {
+  const totalPages = doc?.numPages || 0;
+  const distanceBetweenPages = 10;
+
+  for (let i = 0; i < totalPages; ++i) {
+    const page = await doc.getPage(i + 1);
+    console.log('page: ', page);
+    const y = (pageHeight + distanceBetweenPages) * i;
+    const pagetity: Entity = {
+      id: randomIdGenerator(),
+      height: pageHeight,
+      isRendered: false,
+      width: pageWidth,
+      worldCoord: { x: 0, y },
+      type: "page",
+      page
+    }
+    entities.set(pagetity.id, pagetity);
+  }
 }
