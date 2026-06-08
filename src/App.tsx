@@ -26,12 +26,20 @@ function App() {
   const { pageCount, uploadFile, doc, pageHeight, pageWidth } = usePdf();
   const [cameraCoord, setCameraCoord] = useState<Coord>({ x: 0, y: 0 });
   const worldRef = useRef<HTMLDivElement>(null);
+  const [surfaceSize, setSurfaceSize] = useState({ width: 0, height: 0 })
 
   useEffect(() => {
     const world = worldRef.current;
     if (world) {
       addPointToOrigin(world);
-      centerWorldToCamera(world);
+      const viewportDiv = world?.parentElement;
+      if (!viewportDiv) return;
+      console.log(viewportDiv.clientHeight, viewportDiv.clientWidth);
+      setSurfaceSize({
+        width: viewportDiv.clientWidth * 1.25,
+        height: viewportDiv.clientHeight * 1.25
+      })
+      //centerWorldToCamera(world);
     }
   }, []);
   useEffect(() => {
@@ -76,10 +84,12 @@ function App() {
           <p>Camera x,y: {cameraCoord.x}, {cameraCoord.y}</p>
         </>
       )}
-      <div id="viewport" className="relative overflow-hidden bg-gray-300 m-5 h-[1000px] w-[1000px]">
+      <div id="viewport" className="relative overflow-hidden bg-gray-300 m-5 h-[95vh] w-[95vw]">
         <div
           id="world"
-          className="relative bg-slate-700 h-[1250px] w-[1250px]" ref={worldRef}
+          className={`relative bg-slate-700`}
+          style={{ height: surfaceSize.height, width: surfaceSize.width }}
+          ref={worldRef}
         >
           <div id="origin-point"></div>
         </div>
@@ -89,5 +99,5 @@ function App() {
 }
 
 export default App
-
+//kij
 
