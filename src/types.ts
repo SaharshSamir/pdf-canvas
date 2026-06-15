@@ -1,4 +1,4 @@
-import { type PDFPageProxy } from "pdfjs-dist";
+import { type PDFPageProxy, type PDFDocumentProxy } from "pdfjs-dist";
 
 export type Coord = {
   x: number;
@@ -13,7 +13,6 @@ export interface BaseEntity {
   height: number;
   width: number
   isRendered: boolean;
-  container?: HTMLDivElement;
 }
 
 export interface PageEntity extends BaseEntity {
@@ -23,6 +22,14 @@ export interface PageEntity extends BaseEntity {
 
 export interface CubeEntity extends BaseEntity {
   type: "cube",
+  fillColor: string;
 }
 
 export type Entity = CubeEntity | PageEntity;
+
+
+export type DocMeta = {
+  doc: PDFDocumentProxy | null;
+  pageHeight: number;
+  pageCount: number;
+}
