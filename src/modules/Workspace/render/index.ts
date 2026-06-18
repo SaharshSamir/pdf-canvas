@@ -50,7 +50,8 @@ export function render(entityStore: EntityStore, ctx: CanvasRenderingContext2D, 
         ctx.fillRect(screenX, screenY, entity.width, entity.height);
         break;
       case "page":
-        console.log("idk")
+        console.log(entity.pageCanvas.width, entity.pageCanvas.height);
+        ctx.drawImage(entity.pageCanvas, screenX, screenY, entity.width, entity.height);
         break;
     }
 

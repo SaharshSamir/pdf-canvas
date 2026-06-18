@@ -1,7 +1,10 @@
 import { useEffect, useState, useRef } from "react";
-import type { Coord, DocMeta } from "../../types";
+import type { Coord, DocMeta, PageEntity } from "../../types";
 import { render } from "./render";
 import { createEntity, entityStore } from "./utils";
+
+const PAGE_BUFFER = 10;
+const scale = window.devicePixelRatio;
 
 type Props = {
   docMeta: DocMeta;
@@ -38,10 +41,51 @@ function Whiteboard({ docMeta, isDragging }: Props) {
 
   }, [size]);
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
-    console.log('beginDragging: ', beginDragging.current);
+  useEffect(() => {
 
-    console.log(isDragging, beginDragging.current);
+    async function renderPages() {
+
+      for (let i = 1; i <= docMeta.pageCount; ++i) {
+        const page = await docMeta.doc?.getPage(i);
+        if (!page) break;
+
+        const pageCanvas = document.createElement("canvas");
+        const viewport = page.getViewport({ scale });
+
+        pageCanvas.width = viewport.width;
+        pageCanvas.height = viewport.height
+
+        await page.render({ canvasContext: pageCanvas.getContext("2d")!, viewport }).promise;
+
+        const pageHeight = viewport.height / 2;
+        const pageWidth = viewport.width / 2;
+        const worldCoord: Coord = {
+          x: -pageWidth / 2,
+          y: -pageHeight / 2 + (i - 1) * (pageHeight + PAGE_BUFFER),
+        }
+        const entity = createEntity({
+          worldCoord,
+          pageCanvas,
+          height: pageHeight,
+          width: pageWidth,
+          isRendered: false,
+          type: "page"
+        } as PageEntity)
+
+        console.log(entity.width, entity.height, pageCanvas.width, pageCanvas.height);
+      }
+
+
+      const ctx = canvasCtxRef.current;
+      if (ctx) {
+        render(entityStore, ctx, cameraRef.current);
+      }
+    }
+
+    renderPages();
+  }, [docMeta.pageCount])
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
     if (isDragging || beginDragging.current) return;
 
     const canvas = canvasRef.current;

@@ -17,7 +17,7 @@ export interface BaseEntity {
 
 export interface PageEntity extends BaseEntity {
   type: "page",
-  page: PDFPageProxy
+  pageCanvas: HTMLCanvasElement
 }
 
 export interface CubeEntity extends BaseEntity {

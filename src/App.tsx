@@ -51,13 +51,11 @@ function App() {
 
   useEffect(() => {
     document.addEventListener("keydown", (e) => {
-      console.log("keydown", e.shiftKey);
       if (e.shiftKey) {
         setIsDragging(true);
       }
     })
     document.addEventListener("keyup", (e) => {
-      console.log("keyup", e.shiftKey);
       setIsDragging(false);
     })
   }, []);
