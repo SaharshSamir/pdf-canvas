@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import type { Coord, DocMeta, PageEntity, Camera } from "../../types";
+import type { Coord, DocMeta, PageEntity, Camera, DraggableEvent } from "../../types";
 import { render } from "./render";
 import { createEntity, entityStore } from "./utils";
 import { canvasToWorld, getMousePosition, zoomTowardsCursor } from "../../utils";
@@ -45,7 +45,7 @@ function Whiteboard({ docMeta }: Props) {
       setIsDragging(false);
     })
 
-    //handle zoom
+    //handle zoom and panning
     document.addEventListener("wheel", (e) => {
       const ctx = canvasCtxRef.current;
       if (!ctx) return;
@@ -76,6 +76,7 @@ function Whiteboard({ docMeta }: Props) {
           cameraRef.current,
         );
       }
+
     }, { passive: false })
   }, []);
 
@@ -112,7 +113,7 @@ function Whiteboard({ docMeta }: Props) {
           x: -pageWidth / 2,
           y: -pageHeight / 2 + (i - 1) * (pageHeight + PAGE_BUFFER),
         }
-        const entity = createEntity({
+        createEntity({
           worldCoord,
           pageCanvas,
           height: pageHeight,
@@ -133,6 +134,7 @@ function Whiteboard({ docMeta }: Props) {
     renderPages();
   }, [docMeta.pageCount])
 
+  //add square entity
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
     if (isDragging || beginDragging.current) return;
 
@@ -166,7 +168,7 @@ function Whiteboard({ docMeta }: Props) {
 
   }
 
-  const handleDrag = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
+  const handleDrag = (e: DraggableEvent) => {
     getMousePosition(e, mousePosRef);
     if (isDragging && beginDragging.current) {
       cameraRef.current.x -= e.movementX;
@@ -179,11 +181,11 @@ function Whiteboard({ docMeta }: Props) {
 
   return (
     <canvas
-      style={{ backgroundColor: "pink" }}
+      style={{ backgroundColor: "#1d1d1d" }}
       id="canvas"
       ref={canvasRef}
-      width={size.width - 20}
-      height={size.height - 20}
+      width={size.width}
+      height={size.height}
       onMouseDown={(e) => {
         handleCanvasClick(e);
         beginDragging.current = true
@@ -197,7 +199,7 @@ function Whiteboard({ docMeta }: Props) {
 
 export default function Workspace({ docMeta }: Props) {
   return (
-    <div id="viewport" className="h-full w-full bg-green-200 absolute flex justify-center items-center">
+    <div id="viewport" className="h-full w-full absolute flex justify-center items-center">
       <Whiteboard docMeta={docMeta} />
     </div>
   )

@@ -39,3 +39,6 @@ export type DocMeta = {
   pageHeight: number;
   pageCount: number;
 }
+
+
+export type DraggableEvent = React.MouseEvent<HTMLCanvasElement, MouseEvent> | WheelEvent;

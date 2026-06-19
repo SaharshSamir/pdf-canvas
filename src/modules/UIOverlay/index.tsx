@@ -22,7 +22,7 @@ export default function UIOverlay({ setFile }: Props) {
   }
 
   return (
-    <div id="file-input" className="p-2 text-sm rounded-xl absolute  bg-zinc-700">
+    <div id="file-input" className="backdrop-blur-lg p-2 text-sm rounded-xl absolute border border-zinc-700 bg-zinc-800/60">
       <input onChange={(e) => handleInputChange(e)} type="file" />
     </div>
   )

@@ -1,4 +1,4 @@
-import type { Camera, Coord } from "./types";
+import type { Camera, Coord, DraggableEvent } from "./types";
 
 export function randomIdGenerator(): string {
   const alphabets = (new Array(26).fill("") as string[]).map((_s, idx) => String.fromCharCode(idx + 65));
@@ -16,10 +16,10 @@ export function randomIdGenerator(): string {
 }
 
 export function getMousePosition(
-  e: React.MouseEvent<HTMLCanvasElement, MouseEvent>,
+  e: DraggableEvent,
   mousePosition: React.RefObject<Coord>,
 ) {
-  const canvas = e.currentTarget;
+  const canvas = e.currentTarget as HTMLCanvasElement;
   const rect = canvas.getBoundingClientRect();
   mousePosition.current.x = e.clientX - rect.left;
   mousePosition.current.y = e.clientY - rect.top;
