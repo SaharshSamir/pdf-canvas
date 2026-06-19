@@ -1,24 +1,27 @@
 import { useEffect, useState, useRef } from "react";
-import type { Coord, DocMeta, PageEntity } from "../../types";
+import type { Coord, DocMeta, PageEntity, Camera } from "../../types";
 import { render } from "./render";
 import { createEntity, entityStore } from "./utils";
+import { canvasToWorld, getMousePosition, zoomTowardsCursor } from "../../utils";
 
 const PAGE_BUFFER = 10;
 const scale = window.devicePixelRatio;
 
 type Props = {
   docMeta: DocMeta;
-  isDragging: boolean;
 }
 
-function Whiteboard({ docMeta, isDragging }: Props) {
+
+function Whiteboard({ docMeta }: Props) {
   const [size, setSize] = useState<{ width: number, height: number }>({
     width: 0,
     height: 0
   });
-  const cameraRef = useRef<Coord>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const cameraRef = useRef<Camera>({ x: 0, y: 0, zoom: 1 });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const mousePosRef = useRef<Coord>({ x: 0, y: 0 });
   let beginDragging = useRef<boolean>(false);
 
   useEffect(() => {
@@ -30,6 +33,52 @@ function Whiteboard({ docMeta, isDragging }: Props) {
     })
 
   }, []);
+
+  useEffect(() => {
+    //handle panning
+    document.addEventListener("keydown", (e) => {
+      if (e.shiftKey) {
+        setIsDragging(true);
+      }
+    })
+    document.addEventListener("keyup", (e) => {
+      setIsDragging(false);
+    })
+
+    //handle zoom
+    document.addEventListener("wheel", (e) => {
+      const ctx = canvasCtxRef.current;
+      if (!ctx) return;
+
+      if (e.ctrlKey) {
+        e.preventDefault();
+
+        if (e.deltaY < 0) {
+          zoomTowardsCursor(
+            mousePosRef.current,
+            { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
+            1.05,
+            cameraRef.current
+          );
+        } else {
+          zoomTowardsCursor(
+            mousePosRef.current,
+            { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
+            0.93,
+            cameraRef.current
+          );
+        }
+
+
+        render(
+          entityStore,
+          ctx,
+          cameraRef.current,
+        );
+      }
+    }, { passive: false })
+  }, []);
+
 
   useEffect(() => {
     if (size.height === 0 || size.width === 0) return;
@@ -72,7 +121,6 @@ function Whiteboard({ docMeta, isDragging }: Props) {
           type: "page"
         } as PageEntity)
 
-        console.log(entity.width, entity.height, pageCanvas.width, pageCanvas.height);
       }
 
 
@@ -107,14 +155,19 @@ function Whiteboard({ docMeta, isDragging }: Props) {
       isRendered: true
     })
 
-    entity.worldCoord.x = clickX - (canvas.width / 2) + cameraRef.current.x;
-    entity.worldCoord.y = clickY - (canvas.height / 2) + cameraRef.current.y;
+    const worldCoord = canvasToWorld(
+      { x: clickX, y: clickY },
+      { width: canvas.width, height: canvas.height },
+      cameraRef.current
+    );
+    entity.worldCoord = worldCoord;
 
     render(entityStore, ctx, cameraRef.current);
 
   }
 
   const handleDrag = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
+    getMousePosition(e, mousePosRef);
     if (isDragging && beginDragging.current) {
       cameraRef.current.x -= e.movementX;
       cameraRef.current.y -= e.movementY;
@@ -142,10 +195,10 @@ function Whiteboard({ docMeta, isDragging }: Props) {
   )
 }
 
-export default function Workspace({ docMeta, isDragging }: Props) {
+export default function Workspace({ docMeta }: Props) {
   return (
     <div id="viewport" className="h-full w-full bg-green-200 absolute flex justify-center items-center">
-      <Whiteboard docMeta={docMeta} isDragging={isDragging} />
+      <Whiteboard docMeta={docMeta} />
     </div>
   )
 }

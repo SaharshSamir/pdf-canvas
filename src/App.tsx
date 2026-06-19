@@ -45,24 +45,12 @@ function useUploadDoc(file: File | null): DocMeta {
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
 
   const docMeta = useUploadDoc(file);
 
-  useEffect(() => {
-    document.addEventListener("keydown", (e) => {
-      if (e.shiftKey) {
-        setIsDragging(true);
-      }
-    })
-    document.addEventListener("keyup", (e) => {
-      setIsDragging(false);
-    })
-  }, []);
-
   return (
     <div className="w-screen h-screen bg-zinc-800">
-      <Workspace docMeta={docMeta} isDragging={isDragging} />
+      <Workspace docMeta={docMeta} />
       <UIOverlay setFile={setFile} />
     </div>
   )

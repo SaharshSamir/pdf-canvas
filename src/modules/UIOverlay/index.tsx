@@ -18,7 +18,6 @@ export default function UIOverlay({ setFile }: Props) {
     const files = e.currentTarget.files;
     if (!files) return;
 
-    console.log("files: ", files[0]);
     setFile(files[0]);
   }
 

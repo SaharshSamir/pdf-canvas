@@ -5,6 +5,12 @@ export type Coord = {
   y: number
 }
 
+export type Camera = {
+  x: number;
+  y: number;
+  zoom: number
+}
+
 export type EntityStore = Map<string, Entity>;
 
 export interface BaseEntity {
