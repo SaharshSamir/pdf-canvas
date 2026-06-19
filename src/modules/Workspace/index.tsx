@@ -1,0 +1,204 @@
+import { useEffect, useState, useRef } from "react";
+import type { Coord, DocMeta, PageEntity, Camera } from "../../types";
+import { render } from "./render";
+import { createEntity, entityStore } from "./utils";
+import { canvasToWorld, getMousePosition, zoomTowardsCursor } from "../../utils";
+
+const PAGE_BUFFER = 10;
+const scale = window.devicePixelRatio;
+
+type Props = {
+  docMeta: DocMeta;
+}
+
+
+function Whiteboard({ docMeta }: Props) {
+  const [size, setSize] = useState<{ width: number, height: number }>({
+    width: 0,
+    height: 0
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const cameraRef = useRef<Camera>({ x: 0, y: 0, zoom: 1 });
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const mousePosRef = useRef<Coord>({ x: 0, y: 0 });
+  let beginDragging = useRef<boolean>(false);
+
+  useEffect(() => {
+    const viewport = document.getElementById("viewport");
+    if (!viewport) return;
+    setSize({
+      height: viewport.clientHeight,
+      width: viewport.clientWidth
+    })
+
+  }, []);
+
+  useEffect(() => {
+    //handle panning
+    document.addEventListener("keydown", (e) => {
+      if (e.shiftKey) {
+        setIsDragging(true);
+      }
+    })
+    document.addEventListener("keyup", (e) => {
+      setIsDragging(false);
+    })
+
+    //handle zoom
+    document.addEventListener("wheel", (e) => {
+      const ctx = canvasCtxRef.current;
+      if (!ctx) return;
+
+      if (e.ctrlKey) {
+        e.preventDefault();
+
+        if (e.deltaY < 0) {
+          zoomTowardsCursor(
+            mousePosRef.current,
+            { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
+            1.05,
+            cameraRef.current
+          );
+        } else {
+          zoomTowardsCursor(
+            mousePosRef.current,
+            { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
+            0.93,
+            cameraRef.current
+          );
+        }
+
+
+        render(
+          entityStore,
+          ctx,
+          cameraRef.current,
+        );
+      }
+    }, { passive: false })
+  }, []);
+
+
+  useEffect(() => {
+    if (size.height === 0 || size.width === 0) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    canvasCtxRef.current = ctx;
+
+  }, [size]);
+
+  useEffect(() => {
+
+    async function renderPages() {
+
+      for (let i = 1; i <= docMeta.pageCount; ++i) {
+        const page = await docMeta.doc?.getPage(i);
+        if (!page) break;
+
+        const pageCanvas = document.createElement("canvas");
+        const viewport = page.getViewport({ scale });
+
+        pageCanvas.width = viewport.width;
+        pageCanvas.height = viewport.height
+
+        await page.render({ canvasContext: pageCanvas.getContext("2d")!, viewport }).promise;
+
+        const pageHeight = viewport.height / 2;
+        const pageWidth = viewport.width / 2;
+        const worldCoord: Coord = {
+          x: -pageWidth / 2,
+          y: -pageHeight / 2 + (i - 1) * (pageHeight + PAGE_BUFFER),
+        }
+        const entity = createEntity({
+          worldCoord,
+          pageCanvas,
+          height: pageHeight,
+          width: pageWidth,
+          isRendered: false,
+          type: "page"
+        } as PageEntity)
+
+      }
+
+
+      const ctx = canvasCtxRef.current;
+      if (ctx) {
+        render(entityStore, ctx, cameraRef.current);
+      }
+    }
+
+    renderPages();
+  }, [docMeta.pageCount])
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
+    if (isDragging || beginDragging.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvasCtxRef.current;
+    if (!canvas || !ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    const entity = createEntity({
+      id: "",
+      type: "cube",
+      worldCoord: { x: 0, y: 0 },
+      height: 10,
+      width: 10,
+      fillColor: "rgb(200, 20, 50)",
+      isRendered: true
+    })
+
+    const worldCoord = canvasToWorld(
+      { x: clickX, y: clickY },
+      { width: canvas.width, height: canvas.height },
+      cameraRef.current
+    );
+    entity.worldCoord = worldCoord;
+
+    render(entityStore, ctx, cameraRef.current);
+
+  }
+
+  const handleDrag = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
+    getMousePosition(e, mousePosRef);
+    if (isDragging && beginDragging.current) {
+      cameraRef.current.x -= e.movementX;
+      cameraRef.current.y -= e.movementY;
+
+      const ctx = canvasCtxRef.current;
+      if (ctx) render(entityStore, ctx, cameraRef.current);
+    }
+  }
+
+  return (
+    <canvas
+      style={{ backgroundColor: "pink" }}
+      id="canvas"
+      ref={canvasRef}
+      width={size.width - 20}
+      height={size.height - 20}
+      onMouseDown={(e) => {
+        handleCanvasClick(e);
+        beginDragging.current = true
+      }}
+      onMouseUp={() => beginDragging.current = false}
+      //onClick={(e) => handleCanvasClick(e)}
+      onMouseMove={(e) => handleDrag(e)}
+    ></canvas>
+  )
+}
+
+export default function Workspace({ docMeta }: Props) {
+  return (
+    <div id="viewport" className="h-full w-full bg-green-200 absolute flex justify-center items-center">
+      <Whiteboard docMeta={docMeta} />
+    </div>
+  )
+}

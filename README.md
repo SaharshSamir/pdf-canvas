@@ -1,75 +1,104 @@
-# React + TypeScript + Vite
+# PDF Canvas
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An infinite-canvas workspace where PDF pages, annotations, and other objects exist together in a shared world coordinate system.
 
-Currently, two official plugins are available:
+The goal is to combine the freeform spatial thinking of tools like Excalidraw and FigJam with PDF documents as first-class citizens. Instead of annotating a PDF inside a fixed viewer, PDFs become objects in an infinite workspace that can coexist with notes, drawings, arrows, and other content.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Current Architecture
 
-## React Compiler
+The application is built around a simple graphics engine:
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+* Entity Store
+* Camera System
+* World Coordinate System
+* Canvas Renderer
 
-Note: This will impact Vite dev & build performances.
+All objects live in world space and are projected onto the screen through a camera.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+Entities
+    ↓
+Camera
+    ↓
+World → Screen Projection
+    ↓
+Canvas Renderer
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Features
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Core Engine
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+* ✅ Infinite world coordinate system
+* ✅ Camera-based panning
+* ✅ Camera zooming
+* ✅ Zoom towards cursor
+* ✅ World ↔ Screen coordinate mapping
+* ✅ Entity store
+* ✅ Canvas rendering pipeline
+* ✅ Visibility culling
+* ✅ Rendering invalidation and redraw system
+
+### PDF Support
+
+* ✅ PDF loading
+* ✅ PDF page rendering
+* ✅ PDF pages represented as entities
+* ✅ High-resolution page rendering
+* ✅ Camera-aware PDF rendering
+* ✅ Zoomable PDF pages
+
+### Objects
+
+* ✅ Cube / shape entities
+* ✅ World-space object placement
+* ✅ Mixed rendering of PDFs and custom entities
+
+## Roadmap
+
+### Interaction
+
+* ⬜ Entity selection
+* ⬜ Multi-selection
+* ⬜ Entity dragging
+* ⬜ Resize handles
+* ⬜ Context menus
+
+### Annotation
+
+* ⬜ Text notes
+* ⬜ Sticky notes
+* ⬜ Highlight annotations
+* ⬜ Freehand drawing
+* ⬜ Shapes
+* ⬜ Arrows and connectors
+
+### PDF Features
+
+* ⬜ Multi-page document support
+* ⬜ PDF thumbnails
+* ⬜ Page reordering
+* ⬜ Search within PDFs
+* ⬜ OCR support
+
+### Performance
+
+* ⬜ Spatial indexing (Quadtree / R-Tree)
+* ⬜ Incremental rendering
+* ⬜ Large document optimization
+* ⬜ Offscreen rendering
+* ⬜ Worker-based rendering
+
+### Collaboration
+
+* ⬜ Real-time collaboration
+* ⬜ Presence indicators
+* ⬜ Shared cursors
+* ⬜ Multiplayer editing
+
+## Long-Term Vision
+
+Create a workspace where documents are no longer trapped inside a traditional PDF viewer. PDFs, notes, diagrams, drawings, and references should all coexist naturally inside an infinite spatial canvas.
+
+```
 ```
