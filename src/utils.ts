@@ -18,8 +18,8 @@ export function randomIdGenerator(): string {
 export function getMousePosition(
   e: DraggableEvent,
   mousePosition: React.RefObject<Coord>,
+  canvas: HTMLCanvasElement
 ) {
-  const canvas = e.currentTarget as HTMLCanvasElement;
   const rect = canvas.getBoundingClientRect();
   mousePosition.current.x = e.clientX - rect.left;
   mousePosition.current.y = e.clientY - rect.top;

@@ -17,12 +17,14 @@ function Whiteboard({ docMeta }: Props) {
     width: 0,
     height: 0
   });
-  const [isDragging, setIsDragging] = useState(false);
+
   const cameraRef = useRef<Camera>({ x: 0, y: 0, zoom: 1 });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const mousePosRef = useRef<Coord>({ x: 0, y: 0 });
+  let isDragging = useRef<boolean>(false);
   let beginDragging = useRef<boolean>(false);
+
 
   useEffect(() => {
     const viewport = document.getElementById("viewport");
@@ -38,17 +40,27 @@ function Whiteboard({ docMeta }: Props) {
     //handle panning
     document.addEventListener("keydown", (e) => {
       if (e.shiftKey) {
-        setIsDragging(true);
+        isDragging.current = true;
+        //setIsDragging(true);
       }
     })
     document.addEventListener("keyup", (e) => {
-      setIsDragging(false);
+      isDragging.current = false;
+      //setIsDragging(false);
     })
 
     //handle zoom and panning
     document.addEventListener("wheel", (e) => {
+      e.deltaX
+      console.log('wheel is happening');
       const ctx = canvasCtxRef.current;
       if (!ctx) return;
+
+      isDragging.current = true;
+      //setIsDragging(true);
+
+      console.log(e.movementX, e.movementY);
+      handleDrag(e, ctx.canvas);
 
       if (e.ctrlKey) {
         e.preventDefault();
@@ -76,6 +88,7 @@ function Whiteboard({ docMeta }: Props) {
           cameraRef.current,
         );
       }
+      isDragging.current = false;
 
     }, { passive: false })
   }, []);
@@ -136,7 +149,7 @@ function Whiteboard({ docMeta }: Props) {
 
   //add square entity
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
-    if (isDragging || beginDragging.current) return;
+    if (isDragging.current || beginDragging.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvasCtxRef.current;
@@ -168,11 +181,12 @@ function Whiteboard({ docMeta }: Props) {
 
   }
 
-  const handleDrag = (e: DraggableEvent) => {
-    getMousePosition(e, mousePosRef);
-    if (isDragging && beginDragging.current) {
-      cameraRef.current.x -= e.movementX;
-      cameraRef.current.y -= e.movementY;
+  const handleDrag = (e: DraggableEvent, canvas?: HTMLCanvasElement) => {
+    getMousePosition(e, mousePosRef, canvas ? canvas : e.currentTarget as HTMLCanvasElement);
+    if (isDragging.current) {
+      console.log('pann');
+      cameraRef.current.x += canvas ? (e as WheelEvent).deltaX : e.movementX;
+      cameraRef.current.y += canvas ? (e as WheelEvent).deltaY : e.movementY;
 
       const ctx = canvasCtxRef.current;
       if (ctx) render(entityStore, ctx, cameraRef.current);
