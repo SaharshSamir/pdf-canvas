@@ -31,7 +31,15 @@ export interface CubeEntity extends BaseEntity {
   fillColor: string;
 }
 
-export type Entity = CubeEntity | PageEntity;
+export interface TextEntity extends BaseEntity {
+  type: "text",
+  fillColor: string;
+  text: string;
+  isEditing: boolean;
+  size?: number;
+}
+
+export type Entity = CubeEntity | PageEntity | TextEntity;
 
 
 export type DocMeta = {
@@ -42,3 +50,5 @@ export type DocMeta = {
 
 
 export type DraggableEvent = React.MouseEvent<HTMLCanvasElement, MouseEvent> | WheelEvent;
+
+export type Tools = "text" | "drag" | "square" | "circle";

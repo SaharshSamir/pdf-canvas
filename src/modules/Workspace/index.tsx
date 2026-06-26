@@ -1,18 +1,21 @@
 import { useEffect, useState, useRef } from "react";
-import type { Coord, DocMeta, PageEntity, Camera, DraggableEvent } from "../../types";
+import type { Coord, DocMeta, PageEntity, Camera, DraggableEvent, Tools, TextEntity } from "../../types";
 import { render } from "./render";
 import { createEntity, entityStore } from "./utils";
 import { canvasToWorld, getMousePosition, zoomTowardsCursor } from "../../utils";
+import { drawSquare } from "./tools/square";
+import { addText, editText } from "./tools/text";
 
 const PAGE_BUFFER = 10;
 const scale = window.devicePixelRatio;
 
 type Props = {
   docMeta: DocMeta;
+  currentTool: Tools
 }
 
 
-function Whiteboard({ docMeta }: Props) {
+function Whiteboard({ docMeta, currentTool }: Props) {
   const [size, setSize] = useState<{ width: number, height: number }>({
     width: 0,
     height: 0
@@ -22,6 +25,8 @@ function Whiteboard({ docMeta }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const mousePosRef = useRef<Coord>({ x: 0, y: 0 });
+  const currentEditingTextId = useRef<string>("");
+
   let isDragging = useRef<boolean>(false);
   let beginDragging = useRef<boolean>(false);
 
@@ -51,20 +56,22 @@ function Whiteboard({ docMeta }: Props) {
 
     //handle zoom and panning
     document.addEventListener("wheel", (e) => {
-      e.deltaX
-      console.log('wheel is happening');
       const ctx = canvasCtxRef.current;
       if (!ctx) return;
 
       isDragging.current = true;
       //setIsDragging(true);
 
-      console.log(e.movementX, e.movementY);
       handleDrag(e, ctx.canvas);
 
       if (e.ctrlKey) {
         e.preventDefault();
 
+        const before = canvasToWorld(
+          mousePosRef.current,
+          { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
+          cameraRef.current
+        )
         if (e.deltaY < 0) {
           zoomTowardsCursor(
             mousePosRef.current,
@@ -81,12 +88,18 @@ function Whiteboard({ docMeta }: Props) {
           );
         }
 
-
         render(
           entityStore,
           ctx,
           cameraRef.current,
         );
+        const after = canvasToWorld(
+          mousePosRef.current,
+          { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
+          cameraRef.current
+        )
+        //console.log('before: ', before);
+        //console.log('after: ', after);
       }
       isDragging.current = false;
 
@@ -160,23 +173,43 @@ function Whiteboard({ docMeta }: Props) {
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
 
-    const entity = createEntity({
-      id: "",
-      type: "cube",
-      worldCoord: { x: 0, y: 0 },
-      height: 10,
-      width: 10,
-      fillColor: "rgb(200, 20, 50)",
-      isRendered: true
-    })
-
+    const canvasSize = {
+      height: canvas.clientHeight,
+      width: canvas.clientWidth
+    }
+    const screenCoords = {
+      x: clickX,
+      y: clickY,
+    }
     const worldCoord = canvasToWorld(
-      { x: clickX, y: clickY },
-      { width: canvas.width, height: canvas.height },
+      screenCoords,
+      { width: canvasSize.width, height: canvasSize.height },
       cameraRef.current
     );
-    entity.worldCoord = worldCoord;
 
+    //@TODO: we don't really need drawSquare or addTextBox. These functions are just creating the entity
+    switch (currentTool) {
+      case "square":
+        drawSquare(worldCoord);
+        break;
+      case "text":
+        if (currentEditingTextId.current !== "") {
+          break;
+        }
+        const id = addText(worldCoord, screenCoords)
+        currentEditingTextId.current = id;
+        editText(
+          screenCoords,
+          entityStore.get(id) as TextEntity,
+          currentEditingTextId,
+          ctx,
+          cameraRef.current
+        );
+        break;
+      default:
+        console.log('chill');
+
+    }
     render(entityStore, ctx, cameraRef.current);
 
   }
@@ -184,7 +217,6 @@ function Whiteboard({ docMeta }: Props) {
   const handleDrag = (e: DraggableEvent, canvas?: HTMLCanvasElement) => {
     getMousePosition(e, mousePosRef, canvas ? canvas : e.currentTarget as HTMLCanvasElement);
     if (isDragging.current) {
-      console.log('pann');
       cameraRef.current.x += canvas ? (e as WheelEvent).deltaX : e.movementX;
       cameraRef.current.y += canvas ? (e as WheelEvent).deltaY : e.movementY;
 
@@ -195,7 +227,7 @@ function Whiteboard({ docMeta }: Props) {
 
   return (
     <canvas
-      style={{ backgroundColor: "#1d1d1d" }}
+      style={{ backgroundColor: "#1d1d1d", height: "100%", width: "100%" }}
       id="canvas"
       ref={canvasRef}
       width={size.width}
@@ -211,10 +243,10 @@ function Whiteboard({ docMeta }: Props) {
   )
 }
 
-export default function Workspace({ docMeta }: Props) {
+export default function Workspace({ docMeta, currentTool }: Props) {
   return (
     <div id="viewport" className="h-full w-full absolute flex justify-center items-center">
-      <Whiteboard docMeta={docMeta} />
+      <Whiteboard docMeta={docMeta} currentTool={currentTool} />
     </div>
   )
 }

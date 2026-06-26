@@ -63,7 +63,6 @@ export function zoomTowardsCursor(mousePos: Coord, canvas: Size, zoomFactor: num
     canvas,
     camera
   );
-
   const zoomXDrift = worldCoordUnderMouseBeforeZoom.x - worldCoordUnderMouseAfterZoom.x;
   const zoomYDrift = worldCoordUnderMouseBeforeZoom.y - worldCoordUnderMouseAfterZoom.y;
 

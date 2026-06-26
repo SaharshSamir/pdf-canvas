@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import UIOverlay from "./modules/UIOverlay"
 import Workspace from "./modules/Workspace"
 import * as pdfjsLib from 'pdfjs-dist';
-import type { DocMeta } from "./types";
+import type { DocMeta, Tools } from "./types";
 
 
 function useUploadDoc(file: File | null): DocMeta {
@@ -45,13 +45,14 @@ function useUploadDoc(file: File | null): DocMeta {
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
+  const [currentTool, setCurrentTool] = useState<Tools>("drag");
 
   const docMeta = useUploadDoc(file);
 
   return (
     <div className="w-screen h-screen bg-zinc-800">
-      <Workspace docMeta={docMeta} />
-      <UIOverlay setFile={setFile} />
+      <Workspace docMeta={docMeta} currentTool={currentTool} />
+      <UIOverlay setFile={setFile} setCurrentTool={setCurrentTool} currentTool={currentTool} />
     </div>
   )
 }

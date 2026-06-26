@@ -56,6 +56,7 @@ export function render(
 
     switch (entity.type) {
       case "cube":
+        console.log('screenX, screenY: ', screenX, screenY);
         ctx.fillStyle = entity.fillColor;
         ctx.fillRect(
           screenX,
@@ -73,6 +74,11 @@ export function render(
           entity.height * camera.zoom
         );
         break;
+      case "text":
+        console.log('drawing text');
+        ctx.fillStyle = entity.fillColor;
+        ctx.font = `${30 * camera.zoom}px Jetbrains Mono`;
+        ctx.fillText(entity.text, screenX, screenY);
     }
 
   }
