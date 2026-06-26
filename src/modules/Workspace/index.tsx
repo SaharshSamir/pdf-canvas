@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import type { Coord, DocMeta, PageEntity, Camera, DraggableEvent, Tools, TextEntity } from "../../types";
 import { render } from "./render";
 import { createEntity, entityStore } from "./utils";
-import { canvasToWorld, getMousePosition, zoomTowardsCursor } from "../../utils";
+import { canvasToWorld, getMousePosition, worldToCanvas, zoomTowardsCursor } from "../../utils";
 import { drawSquare } from "./tools/square";
 import { addText, editText } from "./tools/text";
 
@@ -67,11 +67,6 @@ function Whiteboard({ docMeta, currentTool }: Props) {
       if (e.ctrlKey) {
         e.preventDefault();
 
-        const before = canvasToWorld(
-          mousePosRef.current,
-          { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
-          cameraRef.current
-        )
         if (e.deltaY < 0) {
           zoomTowardsCursor(
             mousePosRef.current,
@@ -93,13 +88,6 @@ function Whiteboard({ docMeta, currentTool }: Props) {
           ctx,
           cameraRef.current,
         );
-        const after = canvasToWorld(
-          mousePosRef.current,
-          { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
-          cameraRef.current
-        )
-        //console.log('before: ', before);
-        //console.log('after: ', after);
       }
       isDragging.current = false;
 
@@ -168,18 +156,11 @@ function Whiteboard({ docMeta, currentTool }: Props) {
     const ctx = canvasCtxRef.current;
     if (!canvas || !ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+    const screenCoords = mousePosRef.current;
 
     const canvasSize = {
       height: canvas.clientHeight,
       width: canvas.clientWidth
-    }
-    const screenCoords = {
-      x: clickX,
-      y: clickY,
     }
     const worldCoord = canvasToWorld(
       screenCoords,
@@ -196,7 +177,7 @@ function Whiteboard({ docMeta, currentTool }: Props) {
         if (currentEditingTextId.current !== "") {
           break;
         }
-        const id = addText(worldCoord, screenCoords)
+        const id = addText(worldCoord)
         currentEditingTextId.current = id;
         editText(
           screenCoords,
@@ -207,6 +188,7 @@ function Whiteboard({ docMeta, currentTool }: Props) {
         );
         break;
       default:
+        addText(worldCoord, "Nigga");
         console.log('chill');
 
     }

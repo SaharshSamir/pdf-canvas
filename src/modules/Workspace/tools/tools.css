@@ -1,0 +1,4 @@
+#text-input:focus {
+  border: 1px dashed #82cbf5;
+  outline: none;
+}

@@ -4,7 +4,7 @@ import type { RefObject } from "react";
 import { entityStore } from "../utils";
 import { render } from "../render";
 
-export function addText(worldCoord: Coord, screenCoords: Coord): string {
+export function addText(worldCoord: Coord, text?: string): string {
 
   const entity = createEntity({
     id: "",
@@ -14,7 +14,7 @@ export function addText(worldCoord: Coord, screenCoords: Coord): string {
     height: 30,
     width: 100,
     isRendered: false,
-    text: "",
+    text: text ? text : "",
     isEditing: true,
   })
 
@@ -36,6 +36,7 @@ export function editText(
   }
 
   const textarea = document.createElement("textarea");
+  textarea.setAttribute("id", "text-input");
   textarea.style.height = `${entity.height}`;
   textarea.style.width = `${entity.width}`;
   textarea.style.position = 'absolute';
@@ -43,9 +44,9 @@ export function editText(
   textarea.style.left = '0px';
   textarea.style.backgroundColor = "transparent";
   textarea.style.color = "white";
-
   textarea.style.transform = `translate(${screenCoords.x}px, ${screenCoords.y}px)`;
-  //textarea.style.display = "none";
+  //textarea.style.border = "1px dashed #82cbf5";
+
 
   overlay.appendChild(textarea);
   setTimeout(() => {
@@ -59,7 +60,6 @@ export function editText(
 
   textarea.addEventListener("keypress", (e) => {
     if (e.code === "Enter") {
-      console.log('pressed enter');
       entity.isEditing = false;
       textarea.remove();
       currentEditingTextId.current = "";
