@@ -76,7 +76,7 @@ export function render(
       case "text":
         if (!entity.text) break;
         ctx.fillStyle = entity.fillColor;
-        ctx.font = `${30 * camera.zoom}px Arial`;
+        ctx.font = `${(entity.fontSize || 30) * camera.zoom}px Arial`;
         ctx.textBaseline = "top"; //align the y coordinate of the text to top
         ctx.textAlign = "left";  //align the x coordinate of the text to start
         ctx.fillText(entity.text, screenX, screenY);

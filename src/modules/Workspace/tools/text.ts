@@ -1,12 +1,14 @@
-import { createEntity } from "../utils";
-import type { Coord, Camera, EntityStore, TextEntity } from "../../../types";
+import type { Coord, Camera, TextEntity, Entity, EntityStore } from "../../../types";
 import type { RefObject } from "react";
-import { entityStore } from "../utils";
 import { render } from "../render";
 
-export function addText(worldCoord: Coord, text?: string): string {
+export function addText(
+  worldCoord: Coord,
+  addEntity: (entity: Entity) => string,
+  text?: string
+): string {
 
-  const entity = createEntity({
+  const entity_id = addEntity({
     id: "",
     type: "text",
     fillColor: "rgb(255,255,255)",
@@ -14,11 +16,12 @@ export function addText(worldCoord: Coord, text?: string): string {
     height: 30,
     width: 100,
     isRendered: false,
-    text: text ? text : "",
+    text: text || "",
     isEditing: true,
+    fontSize: 30,
   })
 
-  return entity.id;
+  return entity_id;
 
 }
 
@@ -27,7 +30,8 @@ export function editText(
   entity: TextEntity,
   currentEditingTextId: RefObject<string>,
   ctx: CanvasRenderingContext2D,
-  camera: Camera
+  camera: Camera,
+  entityStore: EntityStore
 ) {
 
   const overlay = document.getElementById("UI-overlay");
@@ -45,6 +49,7 @@ export function editText(
   textarea.style.backgroundColor = "transparent";
   textarea.style.color = "white";
   textarea.style.transform = `translate(${screenCoords.x}px, ${screenCoords.y}px)`;
+  textarea.style.font = `${entity.fontSize}px Arial`;
   //textarea.style.border = "1px dashed #82cbf5";
 
 

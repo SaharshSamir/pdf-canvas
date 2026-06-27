@@ -36,7 +36,8 @@ export interface TextEntity extends BaseEntity {
   fillColor: string;
   text: string;
   isEditing: boolean;
-  size?: number;
+  fontSize?: number;
+  inputSize?: number;
 }
 
 export type Entity = CubeEntity | PageEntity | TextEntity;

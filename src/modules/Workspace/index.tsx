@@ -1,29 +1,27 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, type RefObject } from "react";
 import type { Coord, DocMeta, PageEntity, Camera, DraggableEvent, Tools, TextEntity } from "../../types";
 import { render } from "./render";
-import { createEntity, entityStore } from "./utils";
-import { canvasToWorld, getMousePosition, worldToCanvas, zoomTowardsCursor } from "../../utils";
-import { drawSquare } from "./tools/square";
+import { canvasToWorld, getMousePosition, zoomTowardsCursor } from "../../utils";
 import { addText, editText } from "./tools/text";
+import { useAppState } from "../state/app";
 
 const PAGE_BUFFER = 10;
 const scale = window.devicePixelRatio;
 
 type Props = {
   docMeta: DocMeta;
-  currentTool: Tools
 }
 
 
-function Whiteboard({ docMeta, currentTool }: Props) {
+function Whiteboard({ docMeta }: Props) {
   const [size, setSize] = useState<{ width: number, height: number }>({
     width: 0,
     height: 0
   });
 
-  const cameraRef = useRef<Camera>({ x: 0, y: 0, zoom: 1 });
+  const { addEntity, activeTool, canvasCtx, camera, entityStore } = useAppState();
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const mousePosRef = useRef<Coord>({ x: 0, y: 0 });
   const currentEditingTextId = useRef<string>("");
 
@@ -46,7 +44,6 @@ function Whiteboard({ docMeta, currentTool }: Props) {
     document.addEventListener("keydown", (e) => {
       if (e.shiftKey) {
         isDragging.current = true;
-        //setIsDragging(true);
       }
     })
     document.addEventListener("keyup", (e) => {
@@ -56,7 +53,7 @@ function Whiteboard({ docMeta, currentTool }: Props) {
 
     //handle zoom and panning
     document.addEventListener("wheel", (e) => {
-      const ctx = canvasCtxRef.current;
+      const ctx = canvasCtx;
       if (!ctx) return;
 
       isDragging.current = true;
@@ -72,21 +69,21 @@ function Whiteboard({ docMeta, currentTool }: Props) {
             mousePosRef.current,
             { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
             1.05,
-            cameraRef.current
+            camera
           );
         } else {
           zoomTowardsCursor(
             mousePosRef.current,
             { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
             0.93,
-            cameraRef.current
+            camera
           );
         }
 
         render(
           entityStore,
           ctx,
-          cameraRef.current,
+          camera
         );
       }
       isDragging.current = false;
@@ -101,7 +98,7 @@ function Whiteboard({ docMeta, currentTool }: Props) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    canvasCtxRef.current = ctx;
+    useAppState.setState({ canvasCtx: ctx })
 
   }, [size]);
 
@@ -127,7 +124,7 @@ function Whiteboard({ docMeta, currentTool }: Props) {
           x: -pageWidth / 2,
           y: -pageHeight / 2 + (i - 1) * (pageHeight + PAGE_BUFFER),
         }
-        createEntity({
+        addEntity({
           worldCoord,
           pageCanvas,
           height: pageHeight,
@@ -139,9 +136,9 @@ function Whiteboard({ docMeta, currentTool }: Props) {
       }
 
 
-      const ctx = canvasCtxRef.current;
+      const ctx = canvasCtx;
       if (ctx) {
-        render(entityStore, ctx, cameraRef.current);
+        render(entityStore, ctx, camera);
       }
     }
 
@@ -153,7 +150,7 @@ function Whiteboard({ docMeta, currentTool }: Props) {
     if (isDragging.current || beginDragging.current) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvasCtxRef.current;
+    const ctx = canvasCtx;
     if (!canvas || !ctx) return;
 
     const screenCoords = mousePosRef.current;
@@ -165,45 +162,54 @@ function Whiteboard({ docMeta, currentTool }: Props) {
     const worldCoord = canvasToWorld(
       screenCoords,
       { width: canvasSize.width, height: canvasSize.height },
-      cameraRef.current
+      camera
     );
 
     //@TODO: we don't really need drawSquare or addTextBox. These functions are just creating the entity
-    switch (currentTool) {
+    switch (activeTool) {
       case "square":
-        drawSquare(worldCoord);
+        addEntity({
+          id: "",
+          type: "cube",
+          worldCoord: { x: 0, y: 0 },
+          height: 10,
+          width: 10,
+          fillColor: "rgb(200, 20, 50)",
+          isRendered: true
+        })
+
         break;
       case "text":
         if (currentEditingTextId.current !== "") {
           break;
         }
-        const id = addText(worldCoord)
+        const id = addText(worldCoord, addEntity)
         currentEditingTextId.current = id;
         editText(
           screenCoords,
           entityStore.get(id) as TextEntity,
           currentEditingTextId,
           ctx,
-          cameraRef.current
+          camera,
+          entityStore
         );
         break;
       default:
-        addText(worldCoord, "Nigga");
         console.log('chill');
 
     }
-    render(entityStore, ctx, cameraRef.current);
+    render(entityStore, ctx, camera);
 
   }
 
   const handleDrag = (e: DraggableEvent, canvas?: HTMLCanvasElement) => {
     getMousePosition(e, mousePosRef, canvas ? canvas : e.currentTarget as HTMLCanvasElement);
     if (isDragging.current) {
-      cameraRef.current.x += canvas ? (e as WheelEvent).deltaX : e.movementX;
-      cameraRef.current.y += canvas ? (e as WheelEvent).deltaY : e.movementY;
+      camera.x += canvas ? (e as WheelEvent).deltaX : e.movementX;
+      camera.y += canvas ? (e as WheelEvent).deltaY : e.movementY;
 
-      const ctx = canvasCtxRef.current;
-      if (ctx) render(entityStore, ctx, cameraRef.current);
+      const ctx = canvasCtx;
+      if (ctx) render(entityStore, ctx, camera);
     }
   }
 
@@ -225,10 +231,10 @@ function Whiteboard({ docMeta, currentTool }: Props) {
   )
 }
 
-export default function Workspace({ docMeta, currentTool }: Props) {
+export default function Workspace({ docMeta }: Props) {
   return (
     <div id="viewport" className="h-full w-full absolute flex justify-center items-center">
-      <Whiteboard docMeta={docMeta} currentTool={currentTool} />
+      <Whiteboard docMeta={docMeta} />
     </div>
   )
 }
