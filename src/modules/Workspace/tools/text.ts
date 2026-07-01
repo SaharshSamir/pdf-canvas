@@ -13,8 +13,8 @@ export function addText(
     type: "text",
     fillColor: "rgb(255,255,255)",
     worldCoord,
-    height: 30,
-    width: 100,
+    height: 60,
+    width: 200,
     isRendered: false,
     text: text || "",
     isEditing: true,
@@ -31,7 +31,8 @@ export function editText(
   currentEditingTextId: RefObject<string>,
   ctx: CanvasRenderingContext2D,
   camera: Camera,
-  entityStore: EntityStore
+  entityStore: EntityStore,
+  setEditing: (isEditing: boolean) => void
 ) {
 
   const overlay = document.getElementById("UI-overlay");
@@ -41,8 +42,8 @@ export function editText(
 
   const textarea = document.createElement("textarea");
   textarea.setAttribute("id", "text-input");
-  textarea.style.height = `${entity.height}`;
-  textarea.style.width = `${entity.width}`;
+  textarea.style.height = `${entity.height}px`;
+  textarea.style.width = `${entity.width}px`;
   textarea.style.position = 'absolute';
   textarea.style.top = '0px';
   textarea.style.left = '0px';
@@ -63,13 +64,23 @@ export function editText(
     //render(entityStore, ctx, camera);
   });
 
-  textarea.addEventListener("keypress", (e) => {
-    if (e.code === "Enter") {
-      entity.isEditing = false;
-      textarea.remove();
-      currentEditingTextId.current = "";
-      render(entityStore, ctx, camera);
+  const confirmText = () => {
+    entity.isEditing = false;
+    textarea.remove();
+    currentEditingTextId.current = "";
+    setEditing(false);
+    render(entityStore, ctx, camera);
+  }
+
+  textarea.addEventListener("keydown", (e) => {
+    if (e.code === "Enter" || e.code === "Escape") {
+      confirmText();
     }
   });
+
+  textarea.addEventListener("blur", (_) => {
+    confirmText();
+  })
+
 
 }

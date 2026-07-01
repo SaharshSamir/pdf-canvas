@@ -12,6 +12,7 @@ interface AppStore {
   canvasCtx: CanvasRenderingContext2D | null,
   camera: Camera,
   //methods
+  setEditing: (isEdting: boolean) => void,
   addEntity: (entity: Entity) => string,
   setActiveTool: (tool: Tools) => void,
   updateCamera: (newCoord: Camera) => void,
@@ -45,4 +46,4 @@ export const useAppState = create<AppStore>()((set, _get) => ({
       entityStore: s.entityStore
     }
   })
-}))
+} satisfies AppStore))

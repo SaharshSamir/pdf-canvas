@@ -1,5 +1,6 @@
 import type { Coord, Entity, EntityStore, Camera } from "../../../types";
 import { worldToCanvas, type Size } from "../../../utils";
+import { drawText, type CanvasTextConfig } from "canvas-txt";
 
 
 //culling
@@ -76,10 +77,19 @@ export function render(
       case "text":
         if (!entity.text) break;
         ctx.fillStyle = entity.fillColor;
-        ctx.font = `${(entity.fontSize || 30) * camera.zoom}px Arial`;
-        ctx.textBaseline = "top"; //align the y coordinate of the text to top
-        ctx.textAlign = "left";  //align the x coordinate of the text to start
-        ctx.fillText(entity.text, screenX, screenY);
+        const textConfig: CanvasTextConfig = {
+          height: Math.round(entity.height * camera.zoom),
+          width: Math.round(entity.width * camera.zoom),
+          x: screenX,
+          y: screenY,
+          fontSize: Math.round((entity.fontSize || 30) * camera.zoom),
+          align: "left",
+        }
+        drawText(ctx, entity.text, textConfig);
+        break;
+      default:
+        console.log("bruh")
+
     }
 
   }

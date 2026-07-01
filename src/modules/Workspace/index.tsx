@@ -19,7 +19,14 @@ function Whiteboard({ docMeta }: Props) {
     height: 0
   });
 
-  const { addEntity, activeTool, canvasCtx, camera, entityStore } = useAppState();
+  const {
+    addEntity,
+    activeTool,
+    canvasCtx,
+    camera,
+    entityStore,
+    setEditing,
+  } = useAppState();
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mousePosRef = useRef<Coord>({ x: 0, y: 0 });
@@ -40,6 +47,7 @@ function Whiteboard({ docMeta }: Props) {
   }, []);
 
   useEffect(() => {
+    if (!canvasCtx) return;
     //handle panning
     document.addEventListener("keydown", (e) => {
       if (e.shiftKey) {
@@ -53,6 +61,8 @@ function Whiteboard({ docMeta }: Props) {
 
     //handle zoom and panning
     document.addEventListener("wheel", (e) => {
+      const isEditing = useAppState.getState().isEditing;
+      if (isEditing) return;
       const ctx = canvasCtx;
       if (!ctx) return;
 
@@ -89,7 +99,7 @@ function Whiteboard({ docMeta }: Props) {
       isDragging.current = false;
 
     }, { passive: false })
-  }, []);
+  }, [canvasCtx]);
 
 
   useEffect(() => {
@@ -149,6 +159,7 @@ function Whiteboard({ docMeta }: Props) {
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
     if (isDragging.current || beginDragging.current) return;
 
+
     const canvas = canvasRef.current;
     const ctx = canvasCtx;
     if (!canvas || !ctx) return;
@@ -171,7 +182,7 @@ function Whiteboard({ docMeta }: Props) {
         addEntity({
           id: "",
           type: "cube",
-          worldCoord: { x: 0, y: 0 },
+          worldCoord,
           height: 10,
           width: 10,
           fillColor: "rgb(200, 20, 50)",
@@ -185,13 +196,15 @@ function Whiteboard({ docMeta }: Props) {
         }
         const id = addText(worldCoord, addEntity)
         currentEditingTextId.current = id;
+        setEditing(true);
         editText(
           screenCoords,
           entityStore.get(id) as TextEntity,
           currentEditingTextId,
           ctx,
           camera,
-          entityStore
+          entityStore,
+          setEditing
         );
         break;
       default:
@@ -220,11 +233,9 @@ function Whiteboard({ docMeta }: Props) {
       ref={canvasRef}
       width={size.width}
       height={size.height}
-      onMouseDown={(e) => {
+      onMouseUp={(e) => {
         handleCanvasClick(e);
-        beginDragging.current = true
       }}
-      onMouseUp={() => beginDragging.current = false}
       //onClick={(e) => handleCanvasClick(e)}
       onMouseMove={(e) => handleDrag(e)}
     ></canvas>
