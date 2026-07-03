@@ -44,7 +44,7 @@ export function render(
 
     const { x: screenX, y: screenY } = worldToCanvas(
       entity.worldCoord,
-      { height: ctx.canvas.height, width: ctx.canvas.width },
+      canvasSize,
       camera
     )
 
@@ -57,12 +57,13 @@ export function render(
 
     switch (entity.type) {
       case "cube":
-        ctx.fillStyle = entity.fillColor;
+        //ctx.fillStyle = entity.fillColor;
+        ctx.fillStyle = "rgb(169, 220, 250)"
         ctx.fillRect(
           screenX,
           screenY,
-          entity.width * camera.zoom,
-          entity.height * camera.zoom
+          (entity.width) * camera.zoom,
+          (entity.height) * camera.zoom
         );
         break;
       case "page":

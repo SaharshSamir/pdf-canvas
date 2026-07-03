@@ -4,6 +4,7 @@ import { render } from "./render";
 import { canvasToWorld, getMousePosition, zoomTowardsCursor } from "../../utils";
 import { addText, editText } from "./tools/text";
 import { useAppState } from "../state/app";
+import { drawRubberBand } from "./tools/selection";
 
 const PAGE_BUFFER = 10;
 const scale = window.devicePixelRatio;
@@ -13,7 +14,7 @@ type Props = {
 }
 
 
-function Whiteboard({ docMeta }: Props) {
+export default function Workspace({ docMeta }: Props) {
   const [size, setSize] = useState<{ width: number, height: number }>({
     width: 0,
     height: 0
@@ -31,9 +32,9 @@ function Whiteboard({ docMeta }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mousePosRef = useRef<Coord>({ x: 0, y: 0 });
   const currentEditingTextId = useRef<string>("");
+  const dragOrigin = useRef<Coord>({ x: 0, y: 0 });
 
   let isDragging = useRef<boolean>(false);
-  let beginDragging = useRef<boolean>(false);
 
 
   useEffect(() => {
@@ -49,27 +50,26 @@ function Whiteboard({ docMeta }: Props) {
   useEffect(() => {
     if (!canvasCtx) return;
     //handle panning
-    document.addEventListener("keydown", (e) => {
+    const onKeydown = (e: KeyboardEvent) => {
       if (e.shiftKey) {
         isDragging.current = true;
       }
-    })
-    document.addEventListener("keyup", (e) => {
+    }
+
+
+    const onKeyup = (e: KeyboardEvent) => {
       isDragging.current = false;
       //setIsDragging(false);
-    })
+    }
 
     //handle zoom and panning
-    document.addEventListener("wheel", (e) => {
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
       const isEditing = useAppState.getState().isEditing;
       if (isEditing) return;
       const ctx = canvasCtx;
       if (!ctx) return;
 
-      isDragging.current = true;
-      //setIsDragging(true);
-
-      handleDrag(e, ctx.canvas);
 
       if (e.ctrlKey) {
         e.preventDefault();
@@ -95,11 +95,26 @@ function Whiteboard({ docMeta }: Props) {
           ctx,
           camera
         );
-      }
-      isDragging.current = false;
+      } else {
+        camera.x += ctx.canvas ? (e as WheelEvent).deltaX : e.movementX;
+        camera.y += ctx.canvas ? (e as WheelEvent).deltaY : e.movementY;
 
-    }, { passive: false })
-  }, [canvasCtx]);
+        render(entityStore, canvasCtx, camera);
+      }
+
+    }
+
+    document.addEventListener("keydown", onKeydown);
+    document.addEventListener("keyup", onKeyup);
+    document.addEventListener("wheel", onWheel, { passive: false })
+
+    return () => {
+      document.removeEventListener("wheel", onWheel);
+      document.removeEventListener("keyup", onKeyup);
+      document.removeEventListener("keydown", onKeydown);
+    }
+
+  }, [canvasCtx, activeTool]);
 
 
   useEffect(() => {
@@ -155,10 +170,7 @@ function Whiteboard({ docMeta }: Props) {
     renderPages();
   }, [docMeta.pageCount])
 
-  //add square entity
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
-    if (isDragging.current || beginDragging.current) return;
-
 
     const canvas = canvasRef.current;
     const ctx = canvasCtx;
@@ -183,8 +195,8 @@ function Whiteboard({ docMeta }: Props) {
           id: "",
           type: "cube",
           worldCoord,
-          height: 10,
-          width: 10,
+          height: 100,
+          width: 100,
           fillColor: "rgb(200, 20, 50)",
           isRendered: true
         })
@@ -212,40 +224,49 @@ function Whiteboard({ docMeta }: Props) {
 
     }
     render(entityStore, ctx, camera);
-
   }
 
-  const handleDrag = (e: DraggableEvent, canvas?: HTMLCanvasElement) => {
+  const handleMouseMove = (e: DraggableEvent, canvas?: HTMLCanvasElement) => {
+    //track mouse
     getMousePosition(e, mousePosRef, canvas ? canvas : e.currentTarget as HTMLCanvasElement);
-    if (isDragging.current) {
-      camera.x += canvas ? (e as WheelEvent).deltaX : e.movementX;
-      camera.y += canvas ? (e as WheelEvent).deltaY : e.movementY;
 
-      const ctx = canvasCtx;
-      if (ctx) render(entityStore, ctx, camera);
+    if (!canvasCtx) return;
+
+    if (isDragging.current && activeTool === "selection") {
+      render(entityStore, canvasCtx, camera);
+      drawRubberBand(dragOrigin.current, mousePosRef.current, canvasCtx);
+
     }
   }
 
-  return (
-    <canvas
-      style={{ backgroundColor: "#1d1d1d", height: "100%", width: "100%" }}
-      id="canvas"
-      ref={canvasRef}
-      width={size.width}
-      height={size.height}
-      onMouseUp={(e) => {
-        handleCanvasClick(e);
-      }}
-      //onClick={(e) => handleCanvasClick(e)}
-      onMouseMove={(e) => handleDrag(e)}
-    ></canvas>
-  )
-}
+  const handleMouseDown = () => {
+    dragOrigin.current.x = mousePosRef.current.x;
+    dragOrigin.current.y = mousePosRef.current.y;
+    if (activeTool === "selection") {
+      isDragging.current = true;
+    }
+  }
 
-export default function Workspace({ docMeta }: Props) {
+  const handleDragEnd = () => {
+    if (activeTool === "selection") {
+      isDragging.current = false;
+    }
+  }
   return (
     <div id="viewport" className="h-full w-full absolute flex justify-center items-center">
-      <Whiteboard docMeta={docMeta} />
+      <canvas
+        style={{ backgroundColor: "#1d1d1d", height: "100%", width: "100%" }}
+        id="canvas"
+        ref={canvasRef}
+        width={size.width}
+        height={size.height}
+        onMouseUp={(e) => {
+          handleCanvasClick(e);
+          handleDragEnd()
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+      ></canvas>
     </div>
   )
 }

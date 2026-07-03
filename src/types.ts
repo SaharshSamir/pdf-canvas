@@ -52,4 +52,4 @@ export type DocMeta = {
 
 export type DraggableEvent = React.MouseEvent<HTMLCanvasElement, MouseEvent> | WheelEvent;
 
-export type Tools = "text" | "drag" | "square" | "circle";
+export type Tools = "text" | "drag" | "square" | "circle" | "selection";

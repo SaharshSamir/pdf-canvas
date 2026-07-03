@@ -20,7 +20,7 @@ interface AppStore {
 }
 
 export const useAppState = create<AppStore>()((set, _get) => ({
-  activeTool: "drag",
+  activeTool: "selection",
   canvasCtx: null,
   camera: { x: 0, y: 0, zoom: 1 },
   isEditing: false,

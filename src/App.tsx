@@ -49,7 +49,7 @@ function App() {
   const docMeta = useUploadDoc(file);
 
   return (
-    <div className="w-screen h-screen bg-zinc-800">
+    <div className="w-screen h-screen bg-zinc-800 overflow-hidden scrollbar-none">
       <Workspace
         docMeta={docMeta}
       />
