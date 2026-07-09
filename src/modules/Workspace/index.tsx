@@ -1,10 +1,9 @@
-import { useEffect, useState, useRef, type RefObject } from "react";
-import type { Coord, DocMeta, PageEntity, Camera, DraggableEvent, Tools, TextEntity } from "../../types";
+import { useEffect, useState, useRef, type RefObject, useMemo } from "react";
+import type { Coord, DocMeta, PageEntity, EditorContext } from "../../types";
 import { render } from "./render";
-import { canvasToWorld, getMousePosition, zoomTowardsCursor } from "../../utils";
-import { addText, editText } from "./tools/text";
 import { useAppState } from "../state/app";
-import { drawRubberBand } from "./tools/selection";
+import { type Editor, createEditor } from "./editor";
+import { createWorld, type World } from "./world";
 
 const PAGE_BUFFER = 10;
 const scale = window.devicePixelRatio;
@@ -21,20 +20,17 @@ export default function Workspace({ docMeta }: Props) {
   });
 
   const {
-    addEntity,
     activeTool,
-    canvasCtx,
-    camera,
-    entityStore,
     setEditing,
   } = useAppState();
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const worldRef = useRef<World>(createWorld())
+  const editorRef = useRef<Editor>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const mousePosRef = useRef<Coord>({ x: 0, y: 0 });
   const currentEditingTextId = useRef<string>("");
   const dragOrigin = useRef<Coord>({ x: 0, y: 0 });
-
-  let isDragging = useRef<boolean>(false);
+  const isDragging = useRef<boolean>(false);
 
 
   useEffect(() => {
@@ -44,77 +40,37 @@ export default function Workspace({ docMeta }: Props) {
       height: viewport.clientHeight,
       width: viewport.clientWidth
     })
-
   }, []);
 
   useEffect(() => {
-    if (!canvasCtx) return;
-    //handle panning
-    const onKeydown = (e: KeyboardEvent) => {
-      if (e.shiftKey) {
-        isDragging.current = true;
-      }
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) {
+      return;
     }
-
-
-    const onKeyup = (e: KeyboardEvent) => {
-      isDragging.current = false;
-      //setIsDragging(false);
+    const editorCtx: EditorContext = {
+      activeTool,
+      mousePosRef
     }
+    editorRef.current = createEditor(editorCtx, ctx, worldRef.current);
+  }, [activeTool]);
 
-    //handle zoom and panning
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const isEditing = useAppState.getState().isEditing;
-      if (isEditing) return;
-      const ctx = canvasCtx;
-      if (!ctx) return;
-
-
-      if (e.ctrlKey) {
-        e.preventDefault();
-
-        if (e.deltaY < 0) {
-          zoomTowardsCursor(
-            mousePosRef.current,
-            { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
-            1.05,
-            camera
-          );
-        } else {
-          zoomTowardsCursor(
-            mousePosRef.current,
-            { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
-            0.93,
-            camera
-          );
-        }
-
-        render(
-          entityStore,
-          ctx,
-          camera
-        );
-      } else {
-        camera.x += ctx.canvas ? (e as WheelEvent).deltaX : e.movementX;
-        camera.y += ctx.canvas ? (e as WheelEvent).deltaY : e.movementY;
-
-        render(entityStore, canvasCtx, camera);
-      }
-
-    }
-
-    document.addEventListener("keydown", onKeydown);
-    document.addEventListener("keyup", onKeyup);
-    document.addEventListener("wheel", onWheel, { passive: false })
+  //attach all the listeners
+  useEffect(() => {
+    if (!editorRef.current) return;
+    console.log('about to add this wheel listener');
+    document.addEventListener(
+      "wheel",
+      (e) => editorRef.current?.onWheel(e, worldRef.current.zoomTowardsCursor), { passive: false }
+    )
 
     return () => {
-      document.removeEventListener("wheel", onWheel);
-      document.removeEventListener("keyup", onKeyup);
-      document.removeEventListener("keydown", onKeydown);
+      document.removeEventListener(
+        "wheel",
+        (e) => editorRef.current?.onWheel(e, worldRef.current.zoomTowardsCursor)
+      );
     }
 
-  }, [canvasCtx, activeTool]);
+  }, [activeTool]);
 
 
   useEffect(() => {
@@ -129,6 +85,7 @@ export default function Workspace({ docMeta }: Props) {
 
   useEffect(() => {
 
+    //@TODO:move this to editor also
     async function renderPages() {
 
       for (let i = 1; i <= docMeta.pageCount; ++i) {
@@ -149,7 +106,7 @@ export default function Workspace({ docMeta }: Props) {
           x: -pageWidth / 2,
           y: -pageHeight / 2 + (i - 1) * (pageHeight + PAGE_BUFFER),
         }
-        addEntity({
+        worldRef.current.addEntity({
           worldCoord,
           pageCanvas,
           height: pageHeight,
@@ -161,97 +118,14 @@ export default function Workspace({ docMeta }: Props) {
       }
 
 
-      const ctx = canvasCtx;
-      if (ctx) {
-        render(entityStore, ctx, camera);
-      }
+      //if (ctx) {
+      //  render(worldRef.current, ctx);
+      //}
     }
 
     renderPages();
   }, [docMeta.pageCount])
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
-
-    const canvas = canvasRef.current;
-    const ctx = canvasCtx;
-    if (!canvas || !ctx) return;
-
-    const screenCoords = mousePosRef.current;
-
-    const canvasSize = {
-      height: canvas.clientHeight,
-      width: canvas.clientWidth
-    }
-    const worldCoord = canvasToWorld(
-      screenCoords,
-      { width: canvasSize.width, height: canvasSize.height },
-      camera
-    );
-
-    //@TODO: we don't really need drawSquare or addTextBox. These functions are just creating the entity
-    switch (activeTool) {
-      case "square":
-        addEntity({
-          id: "",
-          type: "cube",
-          worldCoord,
-          height: 100,
-          width: 100,
-          fillColor: "rgb(200, 20, 50)",
-          isRendered: true
-        })
-
-        break;
-      case "text":
-        if (currentEditingTextId.current !== "") {
-          break;
-        }
-        const id = addText(worldCoord, addEntity)
-        currentEditingTextId.current = id;
-        setEditing(true);
-        editText(
-          screenCoords,
-          entityStore.get(id) as TextEntity,
-          currentEditingTextId,
-          ctx,
-          camera,
-          entityStore,
-          setEditing
-        );
-        break;
-      default:
-        console.log('chill');
-
-    }
-    render(entityStore, ctx, camera);
-  }
-
-  const handleMouseMove = (e: DraggableEvent, canvas?: HTMLCanvasElement) => {
-    //track mouse
-    getMousePosition(e, mousePosRef, canvas ? canvas : e.currentTarget as HTMLCanvasElement);
-
-    if (!canvasCtx) return;
-
-    if (isDragging.current && activeTool === "selection") {
-      render(entityStore, canvasCtx, camera);
-      drawRubberBand(dragOrigin.current, mousePosRef.current, canvasCtx);
-
-    }
-  }
-
-  const handleMouseDown = () => {
-    dragOrigin.current.x = mousePosRef.current.x;
-    dragOrigin.current.y = mousePosRef.current.y;
-    if (activeTool === "selection") {
-      isDragging.current = true;
-    }
-  }
-
-  const handleDragEnd = () => {
-    if (activeTool === "selection") {
-      isDragging.current = false;
-    }
-  }
   return (
     <div id="viewport" className="h-full w-full absolute flex justify-center items-center">
       <canvas
@@ -260,12 +134,9 @@ export default function Workspace({ docMeta }: Props) {
         ref={canvasRef}
         width={size.width}
         height={size.height}
-        onMouseUp={(e) => {
-          handleCanvasClick(e);
-          handleDragEnd()
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
+        onMouseUp={() => editorRef.current?.handleMouseUp(isDragging, currentEditingTextId, setEditing)}
+        onMouseDown={() => editorRef.current?.handleMouseDown(dragOrigin, isDragging)}
+        onMouseMove={(e) => editorRef.current?.handleMouseMove(e, isDragging, dragOrigin)}
       ></canvas>
     </div>
   )

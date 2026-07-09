@@ -1,6 +1,7 @@
 import type { Coord, Entity, EntityStore, Camera } from "../../../types";
 import { worldToCanvas, type Size } from "../../../utils";
 import { drawText, type CanvasTextConfig } from "canvas-txt";
+import type { World } from "../world";
 
 
 //culling
@@ -27,12 +28,13 @@ function isVisible(screenCoords: Coord, entity: Entity, canvasSize: Size, zoom: 
 
 }
 
+
 export function render(
-  entityStore: EntityStore,
-  ctx: CanvasRenderingContext2D,
-  camera: Camera,
+  world: World,
+  ctx: CanvasRenderingContext2D
 ) {
 
+  const { camera, entityStore } = world;
   const canvasSize = {
     height: ctx.canvas.clientHeight,
     width: ctx.canvas.clientWidth,

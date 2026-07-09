@@ -28,3 +28,7 @@ World
 Camera chooses what to look at
   ↓
 Screen shows the result
+
+## Where dragOrigin is used
+
+right now it's only used for drawing selection

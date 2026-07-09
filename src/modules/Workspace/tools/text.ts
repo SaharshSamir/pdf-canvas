@@ -1,13 +1,13 @@
-import type { Coord, Camera, TextEntity, Entity, EntityStore } from "../../../types";
+import type { Coord, TextEntity, Entity } from "../../../types";
 import type { RefObject } from "react";
 import { render } from "../render";
+import type { World } from "../world";
 
 export function addText(
   worldCoord: Coord,
   addEntity: (entity: Entity) => string,
   text?: string
 ): string {
-
   const entity_id = addEntity({
     id: "",
     type: "text",
@@ -27,17 +27,21 @@ export function addText(
 
 export function editText(
   screenCoords: Coord,
-  entity: TextEntity,
+  textEntityId: string,
   currentEditingTextId: RefObject<string>,
+  world: World,
   ctx: CanvasRenderingContext2D,
-  camera: Camera,
-  entityStore: EntityStore,
   setEditing: (isEditing: boolean) => void
 ) {
 
   const overlay = document.getElementById("UI-overlay");
   if (!overlay) {
     return;
+  }
+
+  const entity = world.entityStore.get(textEntityId) as TextEntity;
+  if (!entity) {
+    throw new Error(`No text entity with id ${textEntityId} found`);
   }
 
   const textarea = document.createElement("textarea");
@@ -69,7 +73,7 @@ export function editText(
     textarea.remove();
     currentEditingTextId.current = "";
     setEditing(false);
-    render(entityStore, ctx, camera);
+    render(world, ctx);
   }
 
   textarea.addEventListener("keydown", (e) => {

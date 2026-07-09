@@ -1,4 +1,4 @@
-import type { Camera, Coord, DraggableEvent } from "./types";
+import type { Camera, Coord, DragArea, DraggableEvent, Entity } from "./types";
 
 export function randomIdGenerator(): string {
   const alphabets = (new Array(26).fill("") as string[]).map((_s, idx) => String.fromCharCode(idx + 65));
@@ -49,24 +49,18 @@ export function canvasToWorld(canvasCoord: Coord, canvas: Size, camera: Camera):
   return { x: worldX, y: worldY };
 }
 
-export function zoomTowardsCursor(mousePos: Coord, canvas: Size, zoomFactor: number, camera: Camera) {
-  const worldCoordUnderMouseBeforeZoom = canvasToWorld(
-    mousePos,
-    canvas,
-    camera
-  );
 
-  camera.zoom *= zoomFactor;
-
-  const worldCoordUnderMouseAfterZoom = canvasToWorld(
-    mousePos,
-    canvas,
-    camera
-  );
-  const zoomXDrift = worldCoordUnderMouseBeforeZoom.x - worldCoordUnderMouseAfterZoom.x;
-  const zoomYDrift = worldCoordUnderMouseBeforeZoom.y - worldCoordUnderMouseAfterZoom.y;
-
-  camera.x += zoomXDrift;
-  camera.y += zoomYDrift;
-
+/**
+ * dragArea should have it's coordinates based on world coordinate system
+ */
+export function isEntityWithinSelection(entity: Entity, dragArea: DragArea): boolean {
+  if (
+    entity.worldCoord.x < dragArea.origin.x ||
+    (entity.worldCoord.y + entity.height) > dragArea.end.y ||
+    (entity.worldCoord.x + entity.width) > dragArea.end.x ||
+    entity.worldCoord.y < dragArea.origin.y
+  ) {
+    return false;
+  }
+  return true;
 }

@@ -1,4 +1,5 @@
 import { type PDFPageProxy, type PDFDocumentProxy } from "pdfjs-dist";
+import type { RefObject } from "react";
 
 export type Coord = {
   x: number;
@@ -53,3 +54,14 @@ export type DocMeta = {
 export type DraggableEvent = React.MouseEvent<HTMLCanvasElement, MouseEvent> | WheelEvent;
 
 export type Tools = "text" | "drag" | "square" | "circle" | "selection";
+
+//Editor
+export type EditorContext = {
+  mousePosRef: RefObject<Coord>,
+  activeTool: Tools,
+}
+
+export type DragArea = {
+  origin: Coord,
+  end: Coord
+}
