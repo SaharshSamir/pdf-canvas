@@ -7,7 +7,7 @@ interface WorldActions {
   addEntity: (entity: Entity) => string,
   removeEntity: (id: string) => void,
   panCamera: (dx: number, dy: number) => void
-  zoomTowardsCursor: (mousePos: Coord, canvas: Size, zoomFactor: number, camera: Camera) => void,
+  zoomTowardsCursor: (mousePos: Coord, ctx: CanvasRenderingContext2D, zoomFactor: number, camera: Camera) => void,
   clearEntities: () => void
 
 }
@@ -39,12 +39,12 @@ export function createWorld(): World {
     camera.y += dy
   }
 
-  const zoomTowardsCursor = (mousePos: Coord, canvas: Size, zoomFactor: number, camera: Camera) => {
-    const worldCoordUnderMouseBeforeZoom = canvasToWorld(mousePos, canvas, camera);
+  const zoomTowardsCursor = (mousePos: Coord, ctx: CanvasRenderingContext2D, zoomFactor: number, camera: Camera) => {
+    const worldCoordUnderMouseBeforeZoom = canvasToWorld(mousePos, ctx, camera);
 
     camera.zoom *= zoomFactor;
 
-    const worldCoordUnderMouseAfterZoom = canvasToWorld(mousePos, canvas, camera);
+    const worldCoordUnderMouseAfterZoom = canvasToWorld(mousePos, ctx, camera);
     const zoomXDrift = worldCoordUnderMouseBeforeZoom.x - worldCoordUnderMouseAfterZoom.x;
     const zoomYDrift = worldCoordUnderMouseBeforeZoom.y - worldCoordUnderMouseAfterZoom.y;
 

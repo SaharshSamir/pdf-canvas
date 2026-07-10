@@ -15,14 +15,23 @@ export function randomIdGenerator(): string {
 
 }
 
-export function getMousePosition(
+type TrackMouse = {
   e: DraggableEvent,
   mousePosition: React.RefObject<Coord>,
-  canvas: HTMLCanvasElement
-) {
-  const rect = canvas.getBoundingClientRect();
-  mousePosition.current.x = e.clientX - rect.left;
-  mousePosition.current.y = e.clientY - rect.top;
+  ctx: CanvasRenderingContext2D,
+  camera: Camera
+}
+export function getMousePosition({ e, mousePosition, ctx, camera }: TrackMouse) {
+  const rect = ctx.canvas.getBoundingClientRect();
+  const mouseCanvasCoord: Coord = {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  }
+
+  const mouseWorldCoord = canvasToWorld(mouseCanvasCoord, ctx, camera);
+
+  mousePosition.current.x = mouseWorldCoord.x;
+  mousePosition.current.y = mouseWorldCoord.y;
 }
 
 export type Size = {
@@ -33,7 +42,12 @@ export type Size = {
 /** 
  * Map a Coord in the world to a Coord on the canvas element
  */
-export function worldToCanvas(worldCoord: Coord, canvas: Size, camera: Camera): Coord {
+export function worldToCanvas(worldCoord: Coord, ctx: CanvasRenderingContext2D, camera: Camera): Coord {
+  const canvas: Size = {
+    height: ctx.canvas.clientHeight,
+    width: ctx.canvas.clientWidth
+  }
+
   const screenX = (worldCoord.x - camera.x) * camera.zoom + canvas.width / 2;
   const screenY = (worldCoord.y - camera.y) * camera.zoom + canvas.height / 2;
 
@@ -42,7 +56,13 @@ export function worldToCanvas(worldCoord: Coord, canvas: Size, camera: Camera): 
 /** 
  * Map a Coord in the canvas element to a Coord in the world
  */
-export function canvasToWorld(canvasCoord: Coord, canvas: Size, camera: Camera): Coord {
+export function canvasToWorld(canvasCoord: Coord, ctx: CanvasRenderingContext2D, camera: Camera): Coord {
+
+  const canvas: Size = {
+    height: ctx.canvas.clientHeight,
+    width: ctx.canvas.clientWidth
+  }
+
   const worldX = (canvasCoord.x - (canvas.width / 2)) / camera.zoom + camera.x;
   const worldY = (canvasCoord.y - (canvas.height / 2)) / camera.zoom + camera.y;
 
@@ -54,13 +74,21 @@ export function canvasToWorld(canvasCoord: Coord, canvas: Size, camera: Camera):
  * dragArea should have it's coordinates based on world coordinate system
  */
 export function isEntityWithinSelection(entity: Entity, dragArea: DragArea): boolean {
-  if (
-    entity.worldCoord.x < dragArea.origin.x ||
-    (entity.worldCoord.y + entity.height) > dragArea.end.y ||
-    (entity.worldCoord.x + entity.width) > dragArea.end.x ||
-    entity.worldCoord.y < dragArea.origin.y
-  ) {
-    return false;
-  }
-  return true;
+
+  const left = Math.min(dragArea.origin.x, dragArea.end.x);
+  const right = Math.max(dragArea.origin.x, dragArea.end.x);
+  const top = Math.min(dragArea.origin.y, dragArea.end.y);
+  const bottom = Math.max(dragArea.origin.y, dragArea.end.y);
+
+  const entityLeft = entity.worldCoord.x;
+  const entityRight = entity.worldCoord.x + entity.width;
+  const entityTop = entity.worldCoord.y;
+  const entityBottom = entity.worldCoord.y + entity.height;
+
+  return (
+    entityLeft >= left &&
+    entityRight <= right &&
+    entityTop >= top &&
+    entityBottom <= bottom
+  );
 }

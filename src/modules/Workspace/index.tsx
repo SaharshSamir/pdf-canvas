@@ -21,14 +21,19 @@ export default function Workspace({ docMeta }: Props) {
 
   const {
     activeTool,
+    selectedEntities,
+    addToSelectedEntities,
     setEditing,
+
   } = useAppState();
 
   const worldRef = useRef<World>(createWorld())
   const editorRef = useRef<Editor>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  /** World coord */
   const mousePosRef = useRef<Coord>({ x: 0, y: 0 });
   const currentEditingTextId = useRef<string>("");
+  /** World coord */
   const dragOrigin = useRef<Coord>({ x: 0, y: 0 });
   const isDragging = useRef<boolean>(false);
 
@@ -49,7 +54,9 @@ export default function Workspace({ docMeta }: Props) {
     }
     const editorCtx: EditorContext = {
       activeTool,
-      mousePosRef
+      selectedEntities,
+      mousePosRef,
+      addToSelectedEntities
     }
     editorRef.current = createEditor(editorCtx, ctx, worldRef.current);
   }, [activeTool]);
@@ -57,7 +64,6 @@ export default function Workspace({ docMeta }: Props) {
   //attach all the listeners
   useEffect(() => {
     if (!editorRef.current) return;
-    console.log('about to add this wheel listener');
     document.addEventListener(
       "wheel",
       (e) => editorRef.current?.onWheel(e, worldRef.current.zoomTowardsCursor), { passive: false }
@@ -117,7 +123,6 @@ export default function Workspace({ docMeta }: Props) {
 
       }
 
-
       //if (ctx) {
       //  render(worldRef.current, ctx);
       //}
@@ -125,6 +130,7 @@ export default function Workspace({ docMeta }: Props) {
 
     renderPages();
   }, [docMeta.pageCount])
+
 
   return (
     <div id="viewport" className="h-full w-full absolute flex justify-center items-center">

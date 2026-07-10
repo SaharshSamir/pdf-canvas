@@ -46,7 +46,7 @@ export function render(
 
     const { x: screenX, y: screenY } = worldToCanvas(
       entity.worldCoord,
-      canvasSize,
+      ctx,
       camera
     )
 

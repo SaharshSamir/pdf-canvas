@@ -5,11 +5,11 @@ import { getMousePosition, type Size } from "../../../utils";
 import { render } from "../render";
 import { canvasToWorld } from "../../../utils";
 import { addText, editText } from "../tools/text";
-import { drawRubberBand } from "../tools/selection";
+import { drawRubberBand, findEntitiesUnderRubberBand } from "../tools/selection";
 import type { World } from "../world";
 
 export type Editor = {
-  onWheel: (e: WheelEvent, zoomTowardsCursor: (mousePos: Coord, canvas: Size, zoomFactor: number, camera: Camera) => void) => void;
+  onWheel: (e: WheelEvent, zoomTowardsCursor: (mousePos: Coord, ctx: CanvasRenderingContext2D, zoomFactor: number, camera: Camera) => void) => void;
   handleCanvasClick: (currentEditingTextId: RefObject<string>, setEditing: (isEditing: boolean) => void) => void;
   handleMouseMove: (e: DraggableEvent, isDragging: RefObject<boolean>, dragOrigin: RefObject<Coord>, canvas?: HTMLCanvasElement) => void;
   handleMouseDown: (dragOrigin: RefObject<Coord>, isDragging: RefObject<boolean>) => void;
@@ -20,9 +20,8 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
   //@TODO: move this to editor
   const onWheel = (
     e: WheelEvent,
-    zoomTowardsCursor: (mousePos: Coord, canvas: Size, zoomFactor: number, camera: Camera) => void,
+    zoomTowardsCursor: (mousePos: Coord, ctx: CanvasRenderingContext2D, zoomFactor: number, camera: Camera) => void,
   ) => {
-    console.log('wheeling');
     e.preventDefault();
     const isEditing = useAppState.getState().isEditing;
     if (isEditing) return;
@@ -33,14 +32,14 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
       if (e.deltaY < 0) {
         zoomTowardsCursor(
           editorCtx.mousePosRef.current,
-          { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
+          ctx,
           1.03,
           world.camera
         );
       } else {
         zoomTowardsCursor(
           editorCtx.mousePosRef.current,
-          { height: ctx.canvas.clientHeight, width: ctx.canvas.clientWidth },
+          ctx,
           0.97,
           world.camera
         );
@@ -51,8 +50,9 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
         ctx,
       );
     } else {
-      world.camera.x += ctx.canvas ? (e as WheelEvent).deltaX : e.movementX;
-      world.camera.y += ctx.canvas ? (e as WheelEvent).deltaY : e.movementY;
+      // divide be 2 because otherwise the pan speed is too high
+      world.camera.x += (ctx.canvas ? (e as WheelEvent).deltaX : e.movementX) / 2;
+      world.camera.y += (ctx.canvas ? (e as WheelEvent).deltaY : e.movementY) / 2;
 
       render(world, ctx);
     }
@@ -63,26 +63,15 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
     currentEditingTextId: RefObject<string>,
     setEditing: (isEditing: boolean) => void,
   ) => {
-    console.log('click triggered: ', editorCtx.activeTool);
 
-    const screenCoords = editorCtx.mousePosRef.current;
-
-    const canvasSize = {
-      height: ctx.canvas.clientHeight,
-      width: ctx.canvas.clientWidth
-    }
-    const worldCoord = canvasToWorld(
-      screenCoords,
-      { width: canvasSize.width, height: canvasSize.height },
-      world.camera
-    );
+    const coord = { ...editorCtx.mousePosRef.current };
 
     switch (editorCtx.activeTool) {
       case "square":
         world.addEntity({
           id: "",
           type: "cube",
-          worldCoord,
+          worldCoord: coord,
           height: 100,
           width: 100,
           fillColor: "rgb(200, 20, 50)",
@@ -94,11 +83,11 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
         if (currentEditingTextId.current !== "") {
           break;
         }
-        const id = addText(worldCoord, world.addEntity)
+        const id = addText(coord, world.addEntity)
         currentEditingTextId.current = id;
         setEditing(true);
         editText(
-          screenCoords,
+          coord,
           id,
           currentEditingTextId,
           world,
@@ -110,6 +99,7 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
         console.log('chill');
 
     }
+    const entities = Array.from(world.entityStore.values()).map(e => e.worldCoord);
     render(world, ctx);
   }
 
@@ -118,32 +108,33 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
     e: DraggableEvent,
     isDragging: RefObject<boolean>,
     dragOrigin: RefObject<Coord>,
-    canvas?: HTMLCanvasElement
   ) => {
-    console.log('moving mouse');
     //track mouse
-    getMousePosition(
+    getMousePosition({
       e,
-      editorCtx.mousePosRef,
-      canvas ? canvas : e.currentTarget as HTMLCanvasElement
-    );
+      mousePosition: editorCtx.mousePosRef,
+      ctx,
+      camera: world.camera
+    });
     if (
       editorCtx.activeTool === "selection" &&
       isDragging.current &&
       dragOrigin
     ) {
       render(world, ctx);
-      const dragArea = drawRubberBand(dragOrigin.current, editorCtx.mousePosRef.current, ctx);
 
+      const dragArea = drawRubberBand(dragOrigin.current, editorCtx.mousePosRef.current, ctx, world.camera);
+      const entities = findEntitiesUnderRubberBand(world, dragArea)
+      editorCtx.addToSelectedEntities(entities.map(e => e.id));
     }
   }
 
 
   //@TODO: move to editor
   const handleMouseDown = (dragOrigin: RefObject<Coord>, isDragging: RefObject<boolean>) => {
-    console.log('mouse down running');
-    dragOrigin.current.x = editorCtx.mousePosRef.current.x;
-    dragOrigin.current.y = editorCtx.mousePosRef.current.y;
+    //const dragOriginWorld = canvasToWorld(editorCtx.mousePosRef.current, ctx, world.camera);
+    dragOrigin.current.x = editorCtx.mousePosRef.current.x
+    dragOrigin.current.y = editorCtx.mousePosRef.current.y
     if (editorCtx.activeTool === "selection") {
       isDragging.current = true;
     }
@@ -155,7 +146,6 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
     currentEditingTextId: RefObject<string>,
     setEditing: (isEditing: boolean) => void,
   ) => {
-    console.log('mouse up ', editorCtx.activeTool);
     if (editorCtx.activeTool === "selection" && isDragging.current) {
       isDragging.current = false;
       render(world, ctx);

@@ -2,6 +2,7 @@ import type { Coord, TextEntity, Entity } from "../../../types";
 import type { RefObject } from "react";
 import { render } from "../render";
 import type { World } from "../world";
+import { worldToCanvas } from "../../../utils";
 
 export function addText(
   worldCoord: Coord,
@@ -26,7 +27,7 @@ export function addText(
 }
 
 export function editText(
-  screenCoords: Coord,
+  coord: Coord,
   textEntityId: string,
   currentEditingTextId: RefObject<string>,
   world: World,
@@ -43,6 +44,8 @@ export function editText(
   if (!entity) {
     throw new Error(`No text entity with id ${textEntityId} found`);
   }
+
+  const screenCoords = worldToCanvas(coord, ctx, world.camera);
 
   const textarea = document.createElement("textarea");
   textarea.setAttribute("id", "text-input");

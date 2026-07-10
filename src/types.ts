@@ -55,10 +55,14 @@ export type DraggableEvent = React.MouseEvent<HTMLCanvasElement, MouseEvent> | W
 
 export type Tools = "text" | "drag" | "square" | "circle" | "selection";
 
+export type SelectedEntities = Set<string>;
+
 //Editor
 export type EditorContext = {
   mousePosRef: RefObject<Coord>,
   activeTool: Tools,
+  selectedEntities: SelectedEntities,
+  addToSelectedEntities: (ids: string[]) => void,
 }
 
 export type DragArea = {
