@@ -1,12 +1,8 @@
 import { useEffect, useState, useRef, type RefObject, useMemo } from "react";
 import type { Coord, DocMeta, PageEntity, EditorContext } from "../../types";
-import { render } from "./render";
 import { useAppState } from "../state/app";
 import { type Editor, createEditor } from "./editor";
 import { createWorld, type World } from "./world";
-
-const PAGE_BUFFER = 10;
-const scale = window.devicePixelRatio;
 
 type Props = {
   docMeta: DocMeta;
@@ -31,7 +27,8 @@ export default function Workspace({ docMeta }: Props) {
   const editorRef = useRef<Editor>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   /** World coord */
-  const mousePosRef = useRef<Coord>({ x: 0, y: 0 });
+  const mouseWorldPosRef = useRef<Coord>({ x: 0, y: 0 });
+  const mouseCanvasPosRef = useRef<Coord>({ x: 0, y: 0 });
   const currentEditingTextId = useRef<string>("");
   /** World coord */
   const dragOrigin = useRef<Coord>({ x: 0, y: 0 });
@@ -55,7 +52,8 @@ export default function Workspace({ docMeta }: Props) {
     const editorCtx: EditorContext = {
       activeTool,
       selectedEntities,
-      mousePosRef,
+      mouseWorldPosRef: mouseWorldPosRef,
+      mouseCanvasPosRef: mouseCanvasPosRef,
       addToSelectedEntities
     }
     editorRef.current = createEditor(editorCtx, ctx, worldRef.current);
@@ -90,45 +88,8 @@ export default function Workspace({ docMeta }: Props) {
   }, [size]);
 
   useEffect(() => {
+    editorRef.current?.createPageEntities(docMeta);
 
-    //@TODO:move this to editor also
-    async function renderPages() {
-
-      for (let i = 1; i <= docMeta.pageCount; ++i) {
-        const page = await docMeta.doc?.getPage(i);
-        if (!page) break;
-
-        const pageCanvas = document.createElement("canvas");
-        const viewport = page.getViewport({ scale });
-
-        pageCanvas.width = viewport.width;
-        pageCanvas.height = viewport.height
-
-        await page.render({ canvasContext: pageCanvas.getContext("2d")!, viewport }).promise;
-
-        const pageHeight = viewport.height / 2;
-        const pageWidth = viewport.width / 2;
-        const worldCoord: Coord = {
-          x: -pageWidth / 2,
-          y: -pageHeight / 2 + (i - 1) * (pageHeight + PAGE_BUFFER),
-        }
-        worldRef.current.addEntity({
-          worldCoord,
-          pageCanvas,
-          height: pageHeight,
-          width: pageWidth,
-          isRendered: false,
-          type: "page"
-        } as PageEntity)
-
-      }
-
-      //if (ctx) {
-      //  render(worldRef.current, ctx);
-      //}
-    }
-
-    renderPages();
   }, [docMeta.pageCount])
 
 

@@ -1,22 +1,16 @@
 import type { RefObject } from "react";
 import { useAppState } from "../../state/app";
-import type { EditorContext, TextEntity, DraggableEvent, Coord, Camera } from "../../../types";
-import { getMousePosition, type Size } from "../../../utils";
+import type { EditorContext, PageEntity, DraggableEvent, Coord, Camera, DocMeta } from "../../../types";
+import { getMousePosition } from "../../../utils";
 import { render } from "../render";
-import { canvasToWorld } from "../../../utils";
 import { addText, editText } from "../tools/text";
 import { drawRubberBand, findEntitiesUnderRubberBand } from "../tools/selection";
 import type { World } from "../world";
 
-export type Editor = {
-  onWheel: (e: WheelEvent, zoomTowardsCursor: (mousePos: Coord, ctx: CanvasRenderingContext2D, zoomFactor: number, camera: Camera) => void) => void;
-  handleCanvasClick: (currentEditingTextId: RefObject<string>, setEditing: (isEditing: boolean) => void) => void;
-  handleMouseMove: (e: DraggableEvent, isDragging: RefObject<boolean>, dragOrigin: RefObject<Coord>, canvas?: HTMLCanvasElement) => void;
-  handleMouseDown: (dragOrigin: RefObject<Coord>, isDragging: RefObject<boolean>) => void;
-  handleMouseUp: (isDragging: RefObject<boolean>, currentEditingTextId: RefObject<string>, setEditing: (isEditing: boolean) => void) => void;
-}
+const PAGE_BUFFER = 10;
+const scale = window.devicePixelRatio;
 
-export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingContext2D, world: World): Editor {
+export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingContext2D, world: World) {
   //@TODO: move this to editor
   const onWheel = (
     e: WheelEvent,
@@ -31,14 +25,14 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
 
       if (e.deltaY < 0) {
         zoomTowardsCursor(
-          editorCtx.mousePosRef.current,
+          editorCtx.mouseCanvasPosRef.current,
           ctx,
           1.03,
           world.camera
         );
       } else {
         zoomTowardsCursor(
-          editorCtx.mousePosRef.current,
+          editorCtx.mouseCanvasPosRef.current,
           ctx,
           0.97,
           world.camera
@@ -64,7 +58,7 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
     setEditing: (isEditing: boolean) => void,
   ) => {
 
-    const coord = { ...editorCtx.mousePosRef.current };
+    const coord = { ...editorCtx.mouseWorldPosRef.current };
 
     switch (editorCtx.activeTool) {
       case "square":
@@ -112,7 +106,8 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
     //track mouse
     getMousePosition({
       e,
-      mousePosition: editorCtx.mousePosRef,
+      mouseWorldPosition: editorCtx.mouseWorldPosRef,
+      mouseCanvasPosition: editorCtx.mouseCanvasPosRef,
       ctx,
       camera: world.camera
     });
@@ -123,7 +118,7 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
     ) {
       render(world, ctx);
 
-      const dragArea = drawRubberBand(dragOrigin.current, editorCtx.mousePosRef.current, ctx, world.camera);
+      const dragArea = drawRubberBand(dragOrigin.current, editorCtx.mouseWorldPosRef.current, ctx, world.camera);
       const entities = findEntitiesUnderRubberBand(world, dragArea)
       editorCtx.addToSelectedEntities(entities.map(e => e.id));
     }
@@ -133,8 +128,8 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
   //@TODO: move to editor
   const handleMouseDown = (dragOrigin: RefObject<Coord>, isDragging: RefObject<boolean>) => {
     //const dragOriginWorld = canvasToWorld(editorCtx.mousePosRef.current, ctx, world.camera);
-    dragOrigin.current.x = editorCtx.mousePosRef.current.x
-    dragOrigin.current.y = editorCtx.mousePosRef.current.y
+    dragOrigin.current.x = editorCtx.mouseWorldPosRef.current.x
+    dragOrigin.current.y = editorCtx.mouseWorldPosRef.current.y
     if (editorCtx.activeTool === "selection") {
       isDragging.current = true;
     }
@@ -154,13 +149,51 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
 
     handleCanvasClick(currentEditingTextId, setEditing);
   }
+  const createPageEntities = async (docMeta: DocMeta) => {
 
+    for (let i = 1; i <= docMeta.pageCount; ++i) {
+      const page = await docMeta.doc?.getPage(i);
+      if (!page) break;
+
+      const pageCanvas = document.createElement("canvas");
+      const viewport = page.getViewport({ scale });
+
+      pageCanvas.width = viewport.width;
+      pageCanvas.height = viewport.height
+
+      await page.render({ canvasContext: pageCanvas.getContext("2d")!, viewport }).promise;
+
+      const pageHeight = viewport.height / 2;
+      const pageWidth = viewport.width / 2;
+      const worldCoord: Coord = {
+        x: -pageWidth / 2,
+        y: -pageHeight / 2 + (i - 1) * (pageHeight + PAGE_BUFFER),
+      }
+      world.addEntity({
+        worldCoord,
+        pageCanvas,
+        height: pageHeight,
+        width: pageWidth,
+        isRendered: false,
+        type: "page"
+      } as PageEntity)
+
+    }
+    render(world, ctx);
+
+    //if (ctx) {
+    //  render(worldRef.current, ctx);
+    //}
+  }
   return {
     onWheel,
     handleCanvasClick,
     handleMouseMove,
     handleMouseDown,
-    handleMouseUp
+    handleMouseUp,
+    createPageEntities
   }
 
 }
+
+export type Editor = ReturnType<typeof createEditor>;

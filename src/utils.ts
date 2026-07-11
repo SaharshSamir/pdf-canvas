@@ -17,21 +17,25 @@ export function randomIdGenerator(): string {
 
 type TrackMouse = {
   e: DraggableEvent,
-  mousePosition: React.RefObject<Coord>,
+  mouseWorldPosition: React.RefObject<Coord>,
+  mouseCanvasPosition: React.RefObject<Coord>,
   ctx: CanvasRenderingContext2D,
   camera: Camera
 }
-export function getMousePosition({ e, mousePosition, ctx, camera }: TrackMouse) {
+export function getMousePosition({ e, mouseWorldPosition, mouseCanvasPosition, ctx, camera }: TrackMouse) {
   const rect = ctx.canvas.getBoundingClientRect();
   const mouseCanvasCoord: Coord = {
     x: e.clientX - rect.left,
     y: e.clientY - rect.top
   }
 
+  mouseCanvasPosition.current.x = mouseCanvasCoord.x;
+  mouseCanvasPosition.current.y = mouseCanvasCoord.y;
+
   const mouseWorldCoord = canvasToWorld(mouseCanvasCoord, ctx, camera);
 
-  mousePosition.current.x = mouseWorldCoord.x;
-  mousePosition.current.y = mouseWorldCoord.y;
+  mouseWorldPosition.current.x = mouseWorldCoord.x;
+  mouseWorldPosition.current.y = mouseWorldCoord.y;
 }
 
 export type Size = {

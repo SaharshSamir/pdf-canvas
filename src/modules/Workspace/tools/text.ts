@@ -73,7 +73,7 @@ export function editText(
 
   const confirmText = () => {
     entity.isEditing = false;
-    textarea.remove();
+    textarea?.remove();
     currentEditingTextId.current = "";
     setEditing(false);
     render(world, ctx);

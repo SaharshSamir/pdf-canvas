@@ -59,7 +59,8 @@ export type SelectedEntities = Set<string>;
 
 //Editor
 export type EditorContext = {
-  mousePosRef: RefObject<Coord>,
+  mouseWorldPosRef: RefObject<Coord>,
+  mouseCanvasPosRef: RefObject<Coord>,
   activeTool: Tools,
   selectedEntities: SelectedEntities,
   addToSelectedEntities: (ids: string[]) => void,

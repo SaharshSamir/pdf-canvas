@@ -1,8 +1,8 @@
-import type { Coord, Entity, EntityStore, Camera } from "../../../types";
+import type { Coord, Entity, EntityStore, Camera, CubeEntity, SelectedEntities } from "../../../types";
 import { worldToCanvas, type Size } from "../../../utils";
 import { drawText, type CanvasTextConfig } from "canvas-txt";
 import type { World } from "../world";
-
+import { useAppState } from "../../state/app";
 
 //culling
 function isVisible(screenCoords: Coord, entity: Entity, canvasSize: Size, zoom: number) {
@@ -28,11 +28,41 @@ function isVisible(screenCoords: Coord, entity: Entity, canvasSize: Size, zoom: 
 
 }
 
+type DrawCubeConfig = {
+  ctx: CanvasRenderingContext2D,
+  screenCoords: Coord,
+  entity: CubeEntity,
+  zoom: number,
+  selected: boolean
+}
+function drawCube(config: DrawCubeConfig) {
+  const { ctx, screenCoords, entity, zoom, selected } = config;
+  const { x: screenX, y: screenY } = screenCoords;
+  ctx.fillStyle = "rgb(169, 220, 250)"
+  ctx.fillRect(
+    screenX,
+    screenY,
+    (entity.width) * zoom,
+    (entity.height) * zoom
+  );
+
+  //if (selected) {
+  //  ctx.strokeStyle = "white";
+  //  ctx.lineWidth = 3;
+  //  ctx.strokeRect(
+  //    screenX - 3,
+  //    screenY - 3,
+  //    ((entity.width) * zoom) + 3,
+  //    ((entity.height) * zoom) + 3
+  //  )
+  //}
+}
 
 export function render(
   world: World,
-  ctx: CanvasRenderingContext2D
+  ctx: CanvasRenderingContext2D,
 ) {
+  const selectedEntities = useAppState.getState().selectedEntities;
 
   const { camera, entityStore } = world;
   const canvasSize = {
@@ -44,6 +74,7 @@ export function render(
 
   for (let [_, entity] of entityStore) {
 
+    const selected = selectedEntities.has(entity.id);
     const { x: screenX, y: screenY } = worldToCanvas(
       entity.worldCoord,
       ctx,
@@ -59,14 +90,14 @@ export function render(
 
     switch (entity.type) {
       case "cube":
-        //ctx.fillStyle = entity.fillColor;
-        ctx.fillStyle = "rgb(169, 220, 250)"
-        ctx.fillRect(
-          screenX,
-          screenY,
-          (entity.width) * camera.zoom,
-          (entity.height) * camera.zoom
-        );
+        const config: DrawCubeConfig = {
+          ctx,
+          entity,
+          screenCoords: { x: screenX, y: screenY },
+          zoom: camera.zoom,
+          selected
+        }
+        drawCube(config);
         break;
       case "page":
         ctx.drawImage(
@@ -98,3 +129,4 @@ export function render(
   }
 
 }
+
