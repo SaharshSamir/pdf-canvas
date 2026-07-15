@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { useAppState } from "../../state/app";
 import type { EditorContext, PageEntity, DraggableEvent, Coord, Camera, DocMeta } from "../../../types";
-import { getMousePosition } from "../../../utils";
+import { isEntityWithinSelection, trackMouse } from "../../../utils";
 import { render } from "../render";
 import { addText, editText } from "../tools/text";
 import { drawRubberBand, findEntitiesUnderRubberBand } from "../tools/selection";
@@ -61,6 +61,9 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
     const coord = { ...editorCtx.mouseWorldPosRef.current };
 
     switch (editorCtx.activeTool) {
+      case "selection":
+
+        break;
       case "square":
         world.addEntity({
           id: "",
@@ -104,7 +107,7 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
     dragOrigin: RefObject<Coord>,
   ) => {
     //track mouse
-    getMousePosition({
+    trackMouse({
       e,
       mouseWorldPosition: editorCtx.mouseWorldPosRef,
       mouseCanvasPosition: editorCtx.mouseCanvasPosRef,
@@ -119,8 +122,16 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
       render(world, ctx);
 
       const dragArea = drawRubberBand(dragOrigin.current, editorCtx.mouseWorldPosRef.current, ctx, world.camera);
-      const entities = findEntitiesUnderRubberBand(world, dragArea)
-      editorCtx.addToSelectedEntities(entities.map(e => e.id));
+      //const entities = findEntitiesUnderRubberBand(world, dragArea)
+      world.entityStore.forEach(e => {
+        const res = isEntityWithinSelection(e, dragArea);
+        if (res) {
+          console.log(e.id, res);
+          editorCtx.addToSelectedEntities([e.id]);
+        } else {
+          editorCtx.removeFromSelectedEntities(e.id);
+        }
+      });
     }
   }
 
@@ -180,11 +191,9 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
 
     }
     render(world, ctx);
-
-    //if (ctx) {
-    //  render(worldRef.current, ctx);
-    //}
   }
+
+
   return {
     onWheel,
     handleCanvasClick,

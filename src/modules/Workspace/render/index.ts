@@ -4,6 +4,8 @@ import { drawText, type CanvasTextConfig } from "canvas-txt";
 import type { World } from "../world";
 import { useAppState } from "../../state/app";
 
+const SELECT_STROKE_GAP = 5;
+const SELECT_STROKE_WIDTH = 3;
 //culling
 function isVisible(screenCoords: Coord, entity: Entity, canvasSize: Size, zoom: number) {
   const e_left = screenCoords.x;
@@ -46,16 +48,18 @@ function drawCube(config: DrawCubeConfig) {
     (entity.height) * zoom
   );
 
-  //if (selected) {
-  //  ctx.strokeStyle = "white";
-  //  ctx.lineWidth = 3;
-  //  ctx.strokeRect(
-  //    screenX - 3,
-  //    screenY - 3,
-  //    ((entity.width) * zoom) + 3,
-  //    ((entity.height) * zoom) + 3
-  //  )
-  //}
+  if (selected) {
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = SELECT_STROKE_WIDTH;
+    ctx.strokeRect(
+      screenX - SELECT_STROKE_GAP,
+      screenY - SELECT_STROKE_GAP,
+      ((entity.width) * zoom) + SELECT_STROKE_GAP * 2,
+      ((entity.height) * zoom) + SELECT_STROKE_GAP * 2
+    )
+  } else {
+
+  }
 }
 
 export function render(

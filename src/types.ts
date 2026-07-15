@@ -60,10 +60,12 @@ export type SelectedEntities = Set<string>;
 //Editor
 export type EditorContext = {
   mouseWorldPosRef: RefObject<Coord>,
-  mouseCanvasPosRef: RefObject<Coord>,
+  mouseCanvasPosRef: RefObject<Coord>
   activeTool: Tools,
   selectedEntities: SelectedEntities,
+  hoveredEntityIdRef: RefObject<string>,
   addToSelectedEntities: (ids: string[]) => void,
+  removeFromSelectedEntities: (id: string) => void,
 }
 
 export type DragArea = {

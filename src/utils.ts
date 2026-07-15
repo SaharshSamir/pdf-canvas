@@ -22,7 +22,7 @@ type TrackMouse = {
   ctx: CanvasRenderingContext2D,
   camera: Camera
 }
-export function getMousePosition({ e, mouseWorldPosition, mouseCanvasPosition, ctx, camera }: TrackMouse) {
+export function trackMouse({ e, mouseWorldPosition, mouseCanvasPosition, ctx, camera }: TrackMouse) {
   const rect = ctx.canvas.getBoundingClientRect();
   const mouseCanvasCoord: Coord = {
     x: e.clientX - rect.left,

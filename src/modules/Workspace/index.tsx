@@ -20,17 +20,16 @@ export default function Workspace({ docMeta }: Props) {
     selectedEntities,
     addToSelectedEntities,
     setEditing,
-
+    removeFromSelectedEntities
   } = useAppState();
 
   const worldRef = useRef<World>(createWorld())
   const editorRef = useRef<Editor>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  /** World coord */
   const mouseWorldPosRef = useRef<Coord>({ x: 0, y: 0 });
   const mouseCanvasPosRef = useRef<Coord>({ x: 0, y: 0 });
+  const hoveredEntityIdRef = useRef<string>("");
   const currentEditingTextId = useRef<string>("");
-  /** World coord */
   const dragOrigin = useRef<Coord>({ x: 0, y: 0 });
   const isDragging = useRef<boolean>(false);
 
@@ -54,7 +53,9 @@ export default function Workspace({ docMeta }: Props) {
       selectedEntities,
       mouseWorldPosRef: mouseWorldPosRef,
       mouseCanvasPosRef: mouseCanvasPosRef,
-      addToSelectedEntities
+      hoveredEntityIdRef,
+      addToSelectedEntities,
+      removeFromSelectedEntities
     }
     editorRef.current = createEditor(editorCtx, ctx, worldRef.current);
   }, [activeTool]);
