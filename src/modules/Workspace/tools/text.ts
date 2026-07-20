@@ -26,6 +26,14 @@ export function addText(
 
 }
 
+function measureTextEntity(entity: TextEntity, ctx: CanvasRenderingContext2D) {
+  ctx.font = `${entity.fontSize}px Arial`;
+  const measure = ctx.measureText(entity.text);
+  const lineHeight = measure.actualBoundingBoxAscent + measure.actualBoundingBoxDescent;
+  entity.width = measure.width;
+  entity.height = lineHeight * 1.2;
+}
+
 export function editText(
   coord: Coord,
   textEntityId: string,
@@ -76,6 +84,11 @@ export function editText(
     textarea?.remove();
     currentEditingTextId.current = "";
     setEditing(false);
+    const textEntity = world.entityStore.get(textEntityId);
+
+    if (!textEntity) throw new Error(`No text entity with id , ${textEntityId}, found`);
+    measureTextEntity(textEntity as TextEntity, ctx)
+
     render(world, ctx);
   }
 

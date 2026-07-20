@@ -89,6 +89,8 @@ export function isEntityWithinSelection(entity: Entity, dragArea: DragArea): boo
   const entityTop = entity.worldCoord.y;
   const entityBottom = entity.worldCoord.y + entity.height;
 
+  //console.log(entityLeft, left, entityRight, right, entityTop, top, entityBottom, bottom);
+
   return (
     entityLeft >= left &&
     entityRight <= right &&

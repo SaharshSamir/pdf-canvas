@@ -1,4 +1,4 @@
-import type { Coord, Entity, EntityStore, Camera, CubeEntity, SelectedEntities } from "../../../types";
+import type { Coord, Entity, EntityStore, Camera, CubeEntity, SelectedEntities, TextEntity, PageEntity } from "../../../types";
 import { worldToCanvas, type Size } from "../../../utils";
 import { drawText, type CanvasTextConfig } from "canvas-txt";
 import type { World } from "../world";
@@ -30,14 +30,15 @@ function isVisible(screenCoords: Coord, entity: Entity, canvasSize: Size, zoom: 
 
 }
 
-type DrawCubeConfig = {
+type DrawConfig<E = CubeEntity | TextEntity | PageEntity> = {
   ctx: CanvasRenderingContext2D,
   screenCoords: Coord,
-  entity: CubeEntity,
+  entity: E,
   zoom: number,
   selected: boolean
 }
-function drawCube(config: DrawCubeConfig) {
+
+function drawCube(config: DrawConfig<CubeEntity>) {
   const { ctx, screenCoords, entity, zoom, selected } = config;
   const { x: screenX, y: screenY } = screenCoords;
   ctx.fillStyle = "rgb(169, 220, 250)"
@@ -59,6 +60,26 @@ function drawCube(config: DrawCubeConfig) {
     )
   } else {
 
+  }
+}
+
+function drawTextEntity(config: DrawConfig<TextEntity>, textConfig: CanvasTextConfig) {
+
+  drawText(config.ctx, config.entity.text, textConfig);
+  console.log('text entity at: ', textConfig.x, textConfig.y);
+
+  const screenX = textConfig.x;
+  const screenY = textConfig.y;
+  //console.log(config.entity.width);
+  if (config.selected) {
+    config.ctx.strokeStyle = "white";
+    config.ctx.lineWidth = SELECT_STROKE_WIDTH;
+    config.ctx.strokeRect(
+      screenX - SELECT_STROKE_GAP,
+      screenY - SELECT_STROKE_GAP,
+      ((config.entity.width) * config.zoom) + SELECT_STROKE_GAP * 2,
+      ((config.entity.height) * config.zoom) + SELECT_STROKE_GAP * 2
+    )
   }
 }
 
@@ -94,7 +115,7 @@ export function render(
 
     switch (entity.type) {
       case "cube":
-        const config: DrawCubeConfig = {
+        const config: DrawConfig<CubeEntity> = {
           ctx,
           entity,
           screenCoords: { x: screenX, y: screenY },
@@ -115,15 +136,23 @@ export function render(
       case "text":
         if (!entity.text) break;
         ctx.fillStyle = entity.fillColor;
+
         const textConfig: CanvasTextConfig = {
-          height: Math.round(entity.height * camera.zoom),
-          width: Math.round(entity.width * camera.zoom),
+          height: entity.height * camera.zoom,
+          width: entity.width * camera.zoom,
           x: screenX,
           y: screenY,
-          fontSize: Math.round((entity.fontSize || 30) * camera.zoom),
+          fontSize: (entity.fontSize || 30) * camera.zoom,
           align: "left",
         }
-        drawText(ctx, entity.text, textConfig);
+        const drawConfig: DrawConfig<TextEntity> = {
+          ctx,
+          entity,
+          screenCoords: { x: textConfig.x, y: textConfig.y },
+          selected,
+          zoom: camera.zoom
+        }
+        drawTextEntity(drawConfig, textConfig);
         break;
       default:
         console.log("bruh")

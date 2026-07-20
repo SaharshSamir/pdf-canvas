@@ -126,7 +126,7 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
       world.entityStore.forEach(e => {
         const res = isEntityWithinSelection(e, dragArea);
         if (res) {
-          console.log(e.id, res);
+          console.log('entity under rubberband');
           editorCtx.addToSelectedEntities([e.id]);
         } else {
           editorCtx.removeFromSelectedEntities(e.id);

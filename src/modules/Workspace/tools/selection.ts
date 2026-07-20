@@ -28,7 +28,6 @@ export function findEntitiesUnderRubberBand(world: World, dragArea: DragArea): E
   world.entityStore.forEach(e => {
     const res = isEntityWithinSelection(e, dragArea);
     if (res) {
-      console.log(e.id, res);
       entities.push(e);
     }
   });
