@@ -32,55 +32,73 @@ function isVisible(screenCoords: Coord, entity: Entity, canvasSize: Size, zoom: 
 
 type DrawConfig<E = CubeEntity | TextEntity | PageEntity> = {
   ctx: CanvasRenderingContext2D,
-  screenCoords: Coord,
   entity: E,
   zoom: number,
   selected: boolean
 }
 
+function drawSelectBoundary(config: DrawConfig<any>) {
+  const { zoom, ctx, selected, entity } = config;
+  if (selected) {
+    const gap = SELECT_STROKE_GAP / zoom;
+    const lineWidth = SELECT_STROKE_WIDTH / zoom;
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = lineWidth;
+    ctx.strokeRect(
+      config.entity.worldCoord.x - gap,
+      config.entity.worldCoord.y - gap,
+      entity.width + gap * 2,
+      entity.height + gap * 2
+    )
+  };
+
+}
+
 function drawCube(config: DrawConfig<CubeEntity>) {
-  const { ctx, screenCoords, entity, zoom, selected } = config;
-  const { x: screenX, y: screenY } = screenCoords;
+  const { ctx, entity } = config;
   ctx.fillStyle = "rgb(169, 220, 250)"
   ctx.fillRect(
-    screenX,
-    screenY,
-    (entity.width) * zoom,
-    (entity.height) * zoom
+    config.entity.worldCoord.x,
+    config.entity.worldCoord.y,
+    (entity.width),
+    (entity.height),
   );
 
-  if (selected) {
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = SELECT_STROKE_WIDTH;
-    ctx.strokeRect(
-      screenX - SELECT_STROKE_GAP,
-      screenY - SELECT_STROKE_GAP,
-      ((entity.width) * zoom) + SELECT_STROKE_GAP * 2,
-      ((entity.height) * zoom) + SELECT_STROKE_GAP * 2
-    )
-  } else {
-
-  }
+  drawSelectBoundary(config);
 }
 
 function drawTextEntity(config: DrawConfig<TextEntity>, textConfig: CanvasTextConfig) {
 
   drawText(config.ctx, config.entity.text, textConfig);
-  console.log('text entity at: ', textConfig.x, textConfig.y);
 
-  const screenX = textConfig.x;
-  const screenY = textConfig.y;
-  //console.log(config.entity.width);
-  if (config.selected) {
-    config.ctx.strokeStyle = "white";
-    config.ctx.lineWidth = SELECT_STROKE_WIDTH;
-    config.ctx.strokeRect(
-      screenX - SELECT_STROKE_GAP,
-      screenY - SELECT_STROKE_GAP,
-      ((config.entity.width) * config.zoom) + SELECT_STROKE_GAP * 2,
-      ((config.entity.height) * config.zoom) + SELECT_STROKE_GAP * 2
-    )
-  }
+  drawSelectBoundary(config);
+
+}
+
+function drawPageEntity(config: DrawConfig<PageEntity>) {
+  const { ctx, entity, selected } = config;
+
+  ctx.drawImage(
+    entity.pageCanvas,
+    entity.worldCoord.x,
+    entity.worldCoord.y,
+    entity.width,
+    entity.height,
+  );
+
+  drawSelectBoundary(config);
+}
+
+function applyCameraTransform(ctx: CanvasRenderingContext2D, canvasSize: Size, camera: Camera) {
+  ctx.setTransform(
+    camera.zoom,
+    0,
+    0,
+    camera.zoom,
+    canvasSize.width / 2 - camera.x * camera.zoom,
+    canvasSize.height / 2 - camera.y * camera.zoom
+  )
 }
 
 export function render(
@@ -95,7 +113,13 @@ export function render(
     width: ctx.canvas.clientWidth,
   }
 
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
+  ctx.restore();
+
+  ctx.save();
+  applyCameraTransform(ctx, canvasSize, camera);
 
   for (let [_, entity] of entityStore) {
 
@@ -118,37 +142,34 @@ export function render(
         const config: DrawConfig<CubeEntity> = {
           ctx,
           entity,
-          screenCoords: { x: screenX, y: screenY },
           zoom: camera.zoom,
           selected
         }
         drawCube(config);
         break;
       case "page":
-        ctx.drawImage(
-          entity.pageCanvas,
-          screenX,
-          screenY,
-          entity.width * camera.zoom,
-          entity.height * camera.zoom
-        );
+        drawPageEntity({
+          ctx,
+          entity,
+          zoom: camera.zoom,
+          selected
+        })
         break;
       case "text":
         if (!entity.text) break;
         ctx.fillStyle = entity.fillColor;
 
         const textConfig: CanvasTextConfig = {
-          height: entity.height * camera.zoom,
-          width: entity.width * camera.zoom,
-          x: screenX,
-          y: screenY,
-          fontSize: (entity.fontSize || 30) * camera.zoom,
+          height: entity.height,
+          width: entity.width,
+          x: entity.worldCoord.x,
+          y: entity.worldCoord.y,
+          fontSize: entity.fontSize ?? 30,
           align: "left",
         }
         const drawConfig: DrawConfig<TextEntity> = {
           ctx,
           entity,
-          screenCoords: { x: textConfig.x, y: textConfig.y },
           selected,
           zoom: camera.zoom
         }
@@ -160,6 +181,7 @@ export function render(
     }
 
   }
+  ctx.restore();
 
 }
 
