@@ -33,7 +33,6 @@ export default function Workspace({ docMeta }: Props) {
   const dragOrigin = useRef<Coord>({ x: 0, y: 0 });
   const isDragging = useRef<boolean>(false);
 
-
   useEffect(() => {
     const viewport = document.getElementById("viewport");
     if (!viewport) return;

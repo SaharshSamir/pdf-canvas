@@ -1,17 +1,29 @@
 import type { RefObject } from "react";
 import { useAppState } from "../../state/app";
-import type { EditorContext, PageEntity, DraggableEvent, Coord, Camera, DocMeta } from "../../../types";
-import { isEntityWithinSelection, trackMouse } from "../../../utils";
+import type { EditorContext, Entity, PageEntity, DraggableEvent, Coord, Camera, DocMeta } from "../../../types";
+import { isEntityWithinSelection, isPointOnEntity, trackMouse } from "../../../utils";
 import { render } from "../render";
 import { addText, editText } from "../tools/text";
-import { drawRubberBand, findEntitiesUnderRubberBand } from "../tools/selection";
+import { drawRubberBand } from "../tools/selection";
 import type { World } from "../world";
 
 const PAGE_BUFFER = 10;
 const scale = window.devicePixelRatio;
 
 export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingContext2D, world: World) {
-  //@TODO: move this to editor
+
+  const trackHoveredEntity = () => {
+    const mouseWorldCoord = editorCtx.mouseWorldPosRef.current;
+    for (let [id, e] of world.entityStore) {
+      if (isPointOnEntity(mouseWorldCoord, e)) {
+        editorCtx.hoveredEntityIdRef.current = id;
+        break;
+      } else {
+        editorCtx.hoveredEntityIdRef.current = "";
+      }
+    }
+  }
+
   const onWheel = (
     e: WheelEvent,
     zoomTowardsCursor: (mousePos: Coord, ctx: CanvasRenderingContext2D, zoomFactor: number, camera: Camera) => void,
@@ -114,6 +126,7 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
       ctx,
       camera: world.camera
     });
+    trackHoveredEntity();
     if (
       editorCtx.activeTool === "selection" &&
       isDragging.current &&
@@ -138,12 +151,21 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
 
   //@TODO: move to editor
   const handleMouseDown = (dragOrigin: RefObject<Coord>, isDragging: RefObject<boolean>) => {
-    //const dragOriginWorld = canvasToWorld(editorCtx.mousePosRef.current, ctx, world.camera);
     dragOrigin.current.x = editorCtx.mouseWorldPosRef.current.x
     dragOrigin.current.y = editorCtx.mouseWorldPosRef.current.y
     if (editorCtx.activeTool === "selection") {
       isDragging.current = true;
+
+      //select entity under mouse
+      const hoveredEntityId = editorCtx.hoveredEntityIdRef.current;
+      if (hoveredEntityId) {
+        editorCtx.selectedEntities.add(hoveredEntityId);
+      } else {
+        editorCtx.selectedEntities.clear();
+      }
     }
+
+
   }
 
   //@TODO: move to editor
@@ -200,7 +222,7 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
     handleMouseMove,
     handleMouseDown,
     handleMouseUp,
-    createPageEntities
+    createPageEntities,
   }
 
 }

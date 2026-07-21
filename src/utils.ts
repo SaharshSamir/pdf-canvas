@@ -75,6 +75,24 @@ export function canvasToWorld(canvasCoord: Coord, ctx: CanvasRenderingContext2D,
 
 
 /**
+ * Checks whether a world coordinate is inside an entity's bounds.
+ */
+export function isPointOnEntity(point: Coord, entity: Entity) {
+  const entityLeft = entity.worldCoord.x;
+  const entityRight = entity.worldCoord.x + entity.width;
+  const entityTop = entity.worldCoord.y;
+  const entityBottom = entity.worldCoord.y + entity.height;
+
+  return (
+    point.x >= entityLeft &&
+    point.x <= entityRight &&
+    point.y >= entityTop &&
+    point.y <= entityBottom
+  );
+}
+
+
+/**
  * dragArea should have it's coordinates based on world coordinate system
  */
 export function isEntityWithinSelection(entity: Entity, dragArea: DragArea): boolean {
