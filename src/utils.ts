@@ -1,4 +1,6 @@
+import type { RefObject } from "react";
 import type { Camera, Coord, DragArea, DraggableEvent, Entity } from "./types";
+import type { World } from "./modules/Workspace/world/world";
 
 export function randomIdGenerator(): string {
   const alphabets = (new Array(26).fill("") as string[]).map((_s, idx) => String.fromCharCode(idx + 65));
@@ -43,7 +45,7 @@ export type Size = {
   width: number;
 }
 
-/** 
+/**
  * Map a Coord in the world to a Coord on the canvas element
  */
 export function worldToCanvas(worldCoord: Coord, ctx: CanvasRenderingContext2D, camera: Camera): Coord {
@@ -57,7 +59,7 @@ export function worldToCanvas(worldCoord: Coord, ctx: CanvasRenderingContext2D, 
 
   return { x: screenX, y: screenY };
 }
-/** 
+/**
  * Map a Coord in the canvas element to a Coord in the world
  */
 export function canvasToWorld(canvasCoord: Coord, ctx: CanvasRenderingContext2D, camera: Camera): Coord {
@@ -115,4 +117,34 @@ export function isEntityWithinSelection(entity: Entity, dragArea: DragArea): boo
     entityTop >= top &&
     entityBottom <= bottom
   );
+}
+
+
+type TrackHoveredEntityCtx = {
+  mouseWorldPosRef: RefObject<Coord>,
+  world: World,
+  hoveredEntityIdRef: RefObject<string>
+}
+//mouseWorldPosRef | world | hoveredEntityIdRef
+export function trackHoveredEntity(ctx: TrackHoveredEntityCtx) {
+  const { mouseWorldPosRef, world, hoveredEntityIdRef } = ctx;
+  const mouseWorldCoord = mouseWorldPosRef.current;
+  for (let [id, e] of world.entityStore) {
+    if (isPointOnEntity(mouseWorldCoord, e)) {
+      hoveredEntityIdRef.current = id;
+      document.body.style.cursor = "move";
+      break;
+    } else {
+      hoveredEntityIdRef.current = "";
+      document.body.style.cursor = "default";
+    }
+  }
+}
+
+export function dragEntity(entity: Entity, entityStartWorldCoord: Coord, dragArea: DragArea) {
+  const dx = dragArea.origin.x - dragArea.end.x;
+  const dy = dragArea.origin.y - dragArea.end.y;
+
+  entity.worldCoord.x = entityStartWorldCoord.x - dx;
+  entity.worldCoord.y = entityStartWorldCoord.y - dy;
 }

@@ -1,7 +1,7 @@
 import type { Coord, TextEntity, Entity } from "../../../types";
 import type { RefObject } from "react";
-import { render } from "../render";
-import type { World } from "../world";
+import { render } from "../render/render";
+import type { World } from "../world/world";
 import { worldToCanvas } from "../../../utils";
 
 export function addText(

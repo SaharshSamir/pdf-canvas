@@ -1,6 +1,6 @@
 import type { Camera, Coord, DragArea, Entity } from "../../../types";
 import { canvasToWorld, isEntityWithinSelection, worldToCanvas } from "../../../utils";
-import type { World } from "../world";
+import type { World } from "../world/world";
 
 export function drawRubberBand(origin: Coord, current: Coord, ctx: CanvasRenderingContext2D, camera: Camera): DragArea {
 

@@ -1,4 +1,4 @@
-import { type PDFPageProxy, type PDFDocumentProxy } from "pdfjs-dist";
+import { type PDFDocumentProxy } from "pdfjs-dist";
 import type { RefObject } from "react";
 
 export type Coord = {
@@ -72,3 +72,5 @@ export type DragArea = {
   origin: Coord,
   end: Coord
 }
+
+export type DragType = "Entity" | "Rubberband" | undefined;

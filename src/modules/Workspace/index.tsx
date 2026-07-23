@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef, type RefObject, useMemo } from "react";
-import type { Coord, DocMeta, PageEntity, EditorContext } from "../../types";
+import type { Coord, DocMeta, PageEntity, EditorContext, DragType } from "../../types";
 import { useAppState } from "../state/app";
-import { type Editor, createEditor } from "./editor";
-import { createWorld, type World } from "./world";
+import { type Editor, createEditor } from "./editor/editor";
+import { createWorld, type World } from "./world/world";
 
 type Props = {
   docMeta: DocMeta;
@@ -30,8 +30,6 @@ export default function Workspace({ docMeta }: Props) {
   const mouseCanvasPosRef = useRef<Coord>({ x: 0, y: 0 });
   const hoveredEntityIdRef = useRef<string>("");
   const currentEditingTextId = useRef<string>("");
-  const dragOrigin = useRef<Coord>({ x: 0, y: 0 });
-  const isDragging = useRef<boolean>(false);
 
   useEffect(() => {
     const viewport = document.getElementById("viewport");
@@ -101,9 +99,9 @@ export default function Workspace({ docMeta }: Props) {
         ref={canvasRef}
         width={size.width}
         height={size.height}
-        onMouseUp={() => editorRef.current?.handleMouseUp(isDragging, currentEditingTextId, setEditing)}
-        onMouseDown={() => editorRef.current?.handleMouseDown(dragOrigin, isDragging)}
-        onMouseMove={(e) => editorRef.current?.handleMouseMove(e, isDragging, dragOrigin)}
+        onMouseUp={() => editorRef.current?.handleMouseUp(currentEditingTextId, setEditing)}
+        onMouseDown={() => editorRef.current?.handleMouseDown()}
+        onMouseMove={(e) => editorRef.current?.handleMouseMove(e)}
       ></canvas>
     </div>
   )

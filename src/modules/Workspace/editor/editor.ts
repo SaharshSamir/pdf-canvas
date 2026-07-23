@@ -1,27 +1,30 @@
 import type { RefObject } from "react";
 import { useAppState } from "../../state/app";
-import type { EditorContext, Entity, PageEntity, DraggableEvent, Coord, Camera, DocMeta } from "../../../types";
-import { isEntityWithinSelection, isPointOnEntity, trackMouse } from "../../../utils";
-import { render } from "../render";
+import type { EditorContext, Entity, PageEntity, DraggableEvent, Coord, Camera, DocMeta, DragType, DragArea } from "../../../types";
+import { dragEntity, isEntityWithinSelection, isPointOnEntity, trackHoveredEntity, trackMouse } from "../../../utils";
+import { render } from "../render/render";
 import { addText, editText } from "../tools/text";
 import { drawRubberBand } from "../tools/selection";
-import type { World } from "../world";
+import type { World } from "../world/world";
 
 const PAGE_BUFFER = 10;
 const scale = window.devicePixelRatio;
 
+type DragState = {
+  dragOrigin: Coord,
+  isDragging: DragType,
+  dragEntityStartWorldCoord: Coord | null,
+  draggingEntityId: string | null
+}
+
 export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingContext2D, world: World) {
 
-  const trackHoveredEntity = () => {
-    const mouseWorldCoord = editorCtx.mouseWorldPosRef.current;
-    for (let [id, e] of world.entityStore) {
-      if (isPointOnEntity(mouseWorldCoord, e)) {
-        editorCtx.hoveredEntityIdRef.current = id;
-        break;
-      } else {
-        editorCtx.hoveredEntityIdRef.current = "";
-      }
-    }
+  let dragEntityStartWorldCoord: Coord | null = null;
+  const dragState: DragState = {
+    dragOrigin: { x: 0, y: 0 },
+    isDragging: undefined,
+    dragEntityStartWorldCoord: null,
+    draggingEntityId: null
   }
 
   const onWheel = (
@@ -108,15 +111,11 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
         console.log('chill');
 
     }
-    const entities = Array.from(world.entityStore.values()).map(e => e.worldCoord);
     render(world, ctx);
   }
 
-  //@TODO: move to editor
   const handleMouseMove = (
     e: DraggableEvent,
-    isDragging: RefObject<boolean>,
-    dragOrigin: RefObject<Coord>,
   ) => {
     //track mouse
     trackMouse({
@@ -126,56 +125,76 @@ export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingConte
       ctx,
       camera: world.camera
     });
-    trackHoveredEntity();
+    trackHoveredEntity({
+      hoveredEntityIdRef: editorCtx.hoveredEntityIdRef,
+      mouseWorldPosRef: editorCtx.mouseWorldPosRef,
+      world
+    });
+
+
     if (
-      editorCtx.activeTool === "selection" &&
-      isDragging.current &&
-      dragOrigin
+      editorCtx.activeTool === "selection"
     ) {
       render(world, ctx);
 
-      const dragArea = drawRubberBand(dragOrigin.current, editorCtx.mouseWorldPosRef.current, ctx, world.camera);
-      //const entities = findEntitiesUnderRubberBand(world, dragArea)
-      world.entityStore.forEach(e => {
-        const res = isEntityWithinSelection(e, dragArea);
-        if (res) {
-          console.log('entity under rubberband');
-          editorCtx.addToSelectedEntities([e.id]);
-        } else {
-          editorCtx.removeFromSelectedEntities(e.id);
+      const hoveredEntityId = editorCtx.hoveredEntityIdRef.current;
+      //selection stuff
+      if (hoveredEntityId === "" && dragState.isDragging === "Rubberband") {
+        const dragArea = drawRubberBand(dragState.dragOrigin, editorCtx.mouseWorldPosRef.current, ctx, world.camera);
+        //const entities = findEntitiesUnderRubberBand(world, dragArea)
+        world.entityStore.forEach(e => {
+          const res = isEntityWithinSelection(e, dragArea);
+          if (res) {
+            editorCtx.addToSelectedEntities([e.id]);
+          } else {
+            editorCtx.removeFromSelectedEntities(e.id);
+          }
+        });
+      }
+      //dragging stuff
+      const { draggingEntityId } = dragState;
+      if (dragState.isDragging == "Entity" && draggingEntityId && editorCtx.selectedEntities.has(draggingEntityId)) {
+        console.log("start drag");
+        const entity = world.entityStore.get(draggingEntityId);
+        if (!entity || !dragEntityStartWorldCoord) throw new Error("This entity does not exist in the store");
+        //drag area = {start = mouse pos from where the drag starts, end = current mous pos}
+        const dragArea: DragArea = {
+          origin: dragState.dragOrigin,
+          end: editorCtx.mouseWorldPosRef.current
         }
-      });
+        dragEntity(entity, dragEntityStartWorldCoord, dragArea)
+      }
     }
   }
 
 
-  //@TODO: move to editor
-  const handleMouseDown = (dragOrigin: RefObject<Coord>, isDragging: RefObject<boolean>) => {
-    dragOrigin.current.x = editorCtx.mouseWorldPosRef.current.x
-    dragOrigin.current.y = editorCtx.mouseWorldPosRef.current.y
+  const handleMouseDown = () => {
+    dragState.dragOrigin.x = editorCtx.mouseWorldPosRef.current.x
+    dragState.dragOrigin.y = editorCtx.mouseWorldPosRef.current.y
     if (editorCtx.activeTool === "selection") {
-      isDragging.current = true;
-
       //select entity under mouse
       const hoveredEntityId = editorCtx.hoveredEntityIdRef.current;
       if (hoveredEntityId) {
+        dragState.isDragging = "Entity";
         editorCtx.selectedEntities.add(hoveredEntityId);
+        const entity = world.entityStore.get(hoveredEntityId);
+        if (!entity) throw new Error("Entity doesn't exist");
+        dragEntityStartWorldCoord = { ...entity.worldCoord };
+        dragState.draggingEntityId = hoveredEntityId;
       } else {
+        dragState.isDragging = "Rubberband";
         editorCtx.selectedEntities.clear();
       }
     }
-
-
+    render(world, ctx);
   }
 
-  //@TODO: move to editor
   const handleMouseUp = (
-    isDragging: RefObject<boolean>,
     currentEditingTextId: RefObject<string>,
     setEditing: (isEditing: boolean) => void,
   ) => {
-    if (editorCtx.activeTool === "selection" && isDragging.current) {
-      isDragging.current = false;
+    if (editorCtx.activeTool === "selection" && dragState.isDragging) {
+      dragState.isDragging= undefined;
       render(world, ctx);
       return;
     }

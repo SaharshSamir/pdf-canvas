@@ -1,7 +1,7 @@
 import type { Coord, Entity, EntityStore, Camera, CubeEntity, SelectedEntities, TextEntity, PageEntity } from "../../../types";
 import { worldToCanvas, type Size } from "../../../utils";
 import { drawText, type CanvasTextConfig } from "canvas-txt";
-import type { World } from "../world";
+import type { World } from "../world/world";
 import { useAppState } from "../../state/app";
 
 const SELECT_STROKE_GAP = 5;
@@ -184,4 +184,3 @@ export function render(
   ctx.restore();
 
 }
-

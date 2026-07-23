@@ -1,6 +1,5 @@
 import type { Camera, Coord, Entity } from "../../../types";
 import { canvasToWorld, randomIdGenerator, type Size } from "../../../utils";
-import { render } from "../render";
 
 interface WorldActions {
   /** returns the id of the entity **/
