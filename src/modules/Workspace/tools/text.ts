@@ -36,13 +36,13 @@ function measureTextEntity(entity: TextEntity, ctx: CanvasRenderingContext2D) {
 
 export function editText(
   coord: Coord,
-  textEntityId: string,
   currentEditingTextId: RefObject<string>,
   world: World,
   ctx: CanvasRenderingContext2D,
   setEditing: (isEditing: boolean) => void
 ) {
 
+  const textEntityId = currentEditingTextId.current;
   const overlay = document.getElementById("UI-overlay");
   if (!overlay) {
     return;

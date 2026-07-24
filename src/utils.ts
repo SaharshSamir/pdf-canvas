@@ -132,11 +132,9 @@ export function trackHoveredEntity(ctx: TrackHoveredEntityCtx) {
   for (let [id, e] of world.entityStore) {
     if (isPointOnEntity(mouseWorldCoord, e)) {
       hoveredEntityIdRef.current = id;
-      document.body.style.cursor = "move";
       break;
     } else {
       hoveredEntityIdRef.current = "";
-      document.body.style.cursor = "default";
     }
   }
 }
