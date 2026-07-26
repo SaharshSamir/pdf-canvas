@@ -74,3 +74,9 @@ export type DragArea = {
 }
 
 export type DragType = "Entity" | "Rubberband" | undefined;
+export type DragState = {
+  dragOrigin: Coord,
+  isDragging: DragType,
+  dragEntityStartWorldCoord: Coord | null,
+  draggingEntityId: string | null
+}

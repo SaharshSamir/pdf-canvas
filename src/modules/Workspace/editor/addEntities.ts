@@ -1,4 +1,4 @@
-import type { Coord, Tools } from "../../../types"
+import type { Coord, DragState, EditorContext, Tools } from "../../../types"
 import type { World } from "../world/world"
 import { addText, editText } from "../tools/text"
 import { render } from "../render/render"
@@ -47,4 +47,15 @@ export function addEntity(props: Something) {
 
   }
   render(world, ctx);
+}
+
+//Decide what to do on mouse down, based on active tool
+type ActionContext = {
+  editorCtx: EditorContext,
+  world: World,
+  dragState: DragState,
+  mouseAction?: "up" | "down"
+}
+export function handleToolAction(ctx: ActionContext) {
+
 }

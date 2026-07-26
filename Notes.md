@@ -29,25 +29,10 @@ Camera chooses what to look at
   ↓
 Screen shows the result
 
-## Where dragOrigin is used
+## Plan for refactoring Editor Enging
+There are 3 entry points for the Editor. Which are the three mouse input handlers: 
+1. onMouseMove()
+2. onMouseDown()
+3. onMouseUp()
 
-right now it's only used for drawing selection
-
-## How to write the drag entity function
-
-on these conditions:
-  isDragging is true AND
-  an entity is hovered AND
-  the same entity is selected
-
-## Condition to NOT draw rubberband
-  entity is hovered AND
-  tool === "selection"
-
-dragArea = {origin: dragOrigin.current, end: mouseWorldPosRef.current}
-dragEntity(entity, entityStartWorldCoord, dragArea)
-
-if tool == selection AND entity hovered AND entity selected : Don't draw rubber band, drag entity
-
--------------
-We don't want to check for hovered entity while dragging. Instead, we want to check for it when setting isDragging = entity
+The editor should recieve these inputs and decide what to do based on the active tool.

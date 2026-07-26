@@ -1,9 +1,8 @@
 import type { RefObject } from "react";
 import { useAppState } from "../../state/app";
-import type { EditorContext, PageEntity, DraggableEvent, Coord, Camera, DocMeta, DragType, DragArea } from "../../../types";
+import type { EditorContext, PageEntity, DraggableEvent, Coord, Camera, DocMeta, DragState, DragArea } from "../../../types";
 import { dragEntity, isEntityWithinSelection, trackHoveredEntity, trackMouse } from "../../../utils";
 import { render } from "../render/render";
-import { addText, editText } from "../tools/text";
 import { drawRubberBand } from "../tools/selection";
 import type { World } from "../world/world";
 import { addEntity } from "./addEntities";
@@ -11,12 +10,6 @@ import { addEntity } from "./addEntities";
 const PAGE_BUFFER = 10;
 const scale = window.devicePixelRatio;
 
-type DragState = {
-  dragOrigin: Coord,
-  isDragging: DragType,
-  dragEntityStartWorldCoord: Coord | null,
-  draggingEntityId: string | null
-}
 
 export function createEditor(editorCtx: EditorContext, ctx: CanvasRenderingContext2D, world: World) {
 
