@@ -1,5 +1,6 @@
 import { type PDFDocumentProxy } from "pdfjs-dist";
 import type { RefObject } from "react";
+import type { World } from "./modules/Workspace/world/world";
 
 export type Coord = {
   x: number;
@@ -53,19 +54,27 @@ export type DocMeta = {
 
 export type DraggableEvent = React.MouseEvent<HTMLCanvasElement, MouseEvent> | WheelEvent;
 
-export type Tools = "text" | "drag" | "square" | "circle" | "selection";
+// "text" | "drag" | "square" | "circle" | "selection";
+export type Tools = "text" | "square" | "selection";
 
 export type SelectedEntities = Set<string>;
 
 //Editor
 export type EditorContext = {
+  activeTool: Tools,
+  canvasCtx: CanvasRenderingContext2D,
+  world: World,
+
   mouseWorldPosRef: RefObject<Coord>,
   mouseCanvasPosRef: RefObject<Coord>
-  activeTool: Tools,
+
   selectedEntities: SelectedEntities,
-  hoveredEntityIdRef: RefObject<string>,
   addToSelectedEntities: (ids: string[]) => void,
   removeFromSelectedEntities: (id: string) => void,
+
+  hoveredEntityIdRef: RefObject<string>,
+  currentEditingTextId: RefObject<string>,
+  setEditing: (isEditing: boolean) => void,
 }
 
 export type DragArea = {

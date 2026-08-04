@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef, type RefObject, useMemo } from "react";
-import type { Coord, DocMeta, PageEntity, EditorContext, DragType } from "../../types";
+import { useEffect, useState, useRef } from "react";
+import type { Coord, DocMeta, EditorContext } from "../../types";
 import { useAppState } from "../state/app";
 import { type Editor, createEditor } from "./editor/editor";
 import { createWorld, type World } from "./world/world";
@@ -47,14 +47,18 @@ export default function Workspace({ docMeta }: Props) {
     }
     const editorCtx: EditorContext = {
       activeTool,
+      canvasCtx: ctx,
+      world: worldRef.current,
       selectedEntities,
       mouseWorldPosRef: mouseWorldPosRef,
       mouseCanvasPosRef: mouseCanvasPosRef,
       hoveredEntityIdRef,
       addToSelectedEntities,
-      removeFromSelectedEntities
+      removeFromSelectedEntities,
+      currentEditingTextId,
+      setEditing
     }
-    editorRef.current = createEditor(editorCtx, ctx, worldRef.current);
+    editorRef.current = createEditor(editorCtx);
   }, [activeTool]);
 
   //attach all the listeners
@@ -99,7 +103,7 @@ export default function Workspace({ docMeta }: Props) {
         ref={canvasRef}
         width={size.width}
         height={size.height}
-        onMouseUp={() => editorRef.current?.handleMouseUp(currentEditingTextId, setEditing)}
+        onMouseUp={() => editorRef.current?.handleMouseUp()}
         onMouseDown={() => editorRef.current?.handleMouseDown()}
         onMouseMove={(e) => editorRef.current?.handleMouseMove(e)}
       ></canvas>

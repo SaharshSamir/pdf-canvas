@@ -1,0 +1,12 @@
+{
+  "lsp": {
+    "eslint": {
+      "settings": {
+        "workingDirectory": {
+          "mode": "auto"
+        }
+      }
+    }
+  },
+  "diagnostics_max_severity": "all"
+}

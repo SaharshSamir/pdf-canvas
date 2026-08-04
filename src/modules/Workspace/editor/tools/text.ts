@@ -1,30 +1,9 @@
-import type { Coord, TextEntity, Entity } from "../../../types";
+import type { Coord, TextEntity } from "../../../../types";
 import type { RefObject } from "react";
-import { render } from "../render/render";
-import type { World } from "../world/world";
-import { worldToCanvas } from "../../../utils";
-
-export function addText(
-  worldCoord: Coord,
-  addEntity: (entity: Entity) => string,
-  text?: string
-): string {
-  const entity_id = addEntity({
-    id: "",
-    type: "text",
-    fillColor: "rgb(255,255,255)",
-    worldCoord,
-    height: 60,
-    width: 200,
-    isRendered: false,
-    text: text || "",
-    isEditing: true,
-    fontSize: 30,
-  })
-
-  return entity_id;
-
-}
+import { render } from "../../render/render";
+import type { World } from "../../world/world";
+import { worldToCanvas } from "../../../../utils";
+import type { Strategy } from "../types";
 
 function measureTextEntity(entity: TextEntity, ctx: CanvasRenderingContext2D) {
   ctx.font = `${entity.fontSize}px Arial`;
@@ -34,7 +13,7 @@ function measureTextEntity(entity: TextEntity, ctx: CanvasRenderingContext2D) {
   entity.height = lineHeight * 1.2;
 }
 
-export function editText(
+function editText(
   coord: Coord,
   currentEditingTextId: RefObject<string>,
   world: World,
@@ -66,7 +45,6 @@ export function editText(
   textarea.style.color = "white";
   textarea.style.transform = `translate(${screenCoords.x}px, ${screenCoords.y}px)`;
   textarea.style.font = `${entity.fontSize}px Arial`;
-  //textarea.style.border = "1px dashed #82cbf5";
 
 
   overlay.appendChild(textarea);
@@ -74,9 +52,8 @@ export function editText(
     textarea.focus();
   }, 0);
 
-  textarea.addEventListener("input", (e) => {
+  textarea.addEventListener("input", (_) => {
     entity.text = textarea.value;
-    //render(entityStore, ctx, camera);
   });
 
   const confirmText = () => {
@@ -101,6 +78,37 @@ export function editText(
   textarea.addEventListener("blur", (_) => {
     confirmText();
   })
+}
 
-
+export function text(): Strategy {
+  return {
+    onMouseDown(ctx) {
+      if (ctx.currentEditingTextId.current !== "") {
+        return;
+      }
+      const mouseWorldCoord = { ...ctx.mouseWorldPosRef.current };
+      ctx.currentEditingTextId.current = ctx.world.addEntity({
+        id: "",
+        type: "text",
+        fillColor: "rgb(255,255,255)",
+        worldCoord: mouseWorldCoord,
+        height: 60,
+        width: 200,
+        isRendered: false,
+        text: "",
+        isEditing: true,
+        fontSize: 30,
+      })
+      ctx.setEditing(true);
+      editText(
+        mouseWorldCoord,
+        ctx.currentEditingTextId,
+        ctx.world,
+        ctx.canvasCtx,
+        ctx.setEditing
+      );
+    },
+    onMouseMove() { },
+    onMouseUp() { },
+  }
 }

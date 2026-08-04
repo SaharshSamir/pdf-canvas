@@ -36,3 +36,6 @@ There are 3 entry points for the Editor. Which are the three mouse input handler
 3. onMouseUp()
 
 The editor should recieve these inputs and decide what to do based on the active tool.
+
+Right now isEditing from the zustand state is used to prevent scrolling when the text is being edited.
+But we may need it in the future in the properties panel
