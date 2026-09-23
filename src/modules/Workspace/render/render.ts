@@ -1,4 +1,4 @@
-import type { Coord, Entity, EntityStore, Camera, CubeEntity, SelectedEntities, TextEntity, PageEntity } from "../../../types";
+import type { Coord, Entity, Camera, CubeEntity, TextEntity, PageEntity, SelectedEntities } from "../../../types";
 import { worldToCanvas, type Size } from "../../../utils";
 import { drawText, type CanvasTextConfig } from "canvas-txt";
 import type { World } from "../world/world";
@@ -37,7 +37,7 @@ type DrawConfig<E = CubeEntity | TextEntity | PageEntity> = {
   selected: boolean
 }
 
-function drawSelectBoundary(config: DrawConfig<any>) {
+function drawSelectBoundary<E extends Entity>(config: DrawConfig<E>) {
   const { zoom, ctx, selected, entity } = config;
   if (selected) {
     const gap = SELECT_STROKE_GAP / zoom;
@@ -52,7 +52,28 @@ function drawSelectBoundary(config: DrawConfig<any>) {
       entity.height + gap * 2
     )
   };
+}
 
+function drawMultiSelectionBoundary(selectedEntities: Entity[], ctx: CanvasRenderingContext2D) {
+  let smallest_x = Infinity;
+  let smallest_y = Infinity;
+  let biggest_x = -Infinity;
+  let biggest_y = -Infinity;
+
+  console.log(selectedEntities);
+  for (const e of selectedEntities) {
+    smallest_x = e.worldCoord.x < smallest_x ? e.worldCoord.x : smallest_x;
+    smallest_y = e.worldCoord.y < smallest_y ? e.worldCoord.y : smallest_y;
+
+    biggest_x = e.worldCoord.x + e.width > biggest_x ? e.worldCoord.x + e.width : biggest_x;
+    biggest_y = e.worldCoord.y + e.height > biggest_y ? e.worldCoord.y + e.height : biggest_y;
+  }
+
+  console.log(smallest_x, smallest_y, biggest_x, biggest_y);
+  const width = biggest_x - smallest_x;
+  const height = biggest_y - smallest_y;
+  ctx.setLineDash([10, 10]);
+  ctx.strokeRect(smallest_x, smallest_y, width, height);
 }
 
 function drawCube(config: DrawConfig<CubeEntity>) {
@@ -77,7 +98,7 @@ function drawTextEntity(config: DrawConfig<TextEntity>, textConfig: CanvasTextCo
 }
 
 function drawPageEntity(config: DrawConfig<PageEntity>) {
-  const { ctx, entity, selected } = config;
+  const { ctx, entity } = config;
 
   ctx.drawImage(
     entity.pageCanvas,
@@ -121,9 +142,11 @@ export function render(
   ctx.save();
   applyCameraTransform(ctx, canvasSize, camera);
 
-  for (let [_, entity] of entityStore) {
+  const selected_es: Entity[] = [];
+  for (const [_, entity] of entityStore) {
 
     const selected = selectedEntities.has(entity.id);
+    if (selected) selected_es.push(entity);
     const { x: screenX, y: screenY } = worldToCanvas(
       entity.worldCoord,
       ctx,
@@ -177,9 +200,12 @@ export function render(
         break;
       default:
         console.log("bruh")
-
     }
 
+  }
+  //draw multi-selection boundary for > 1 entities are selected
+  if (selectedEntities.size > 1) {
+    drawMultiSelectionBoundary(selected_es, ctx);
   }
   ctx.restore();
 

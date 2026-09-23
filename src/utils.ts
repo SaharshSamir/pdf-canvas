@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import type { Camera, Coord, DragArea, DraggableEvent, Entity } from "./types";
+import type { Camera, Coord, Area, DraggableEvent, Entity } from "./types";
 import type { World } from "./modules/Workspace/world/world";
 
 export function randomIdGenerator(): string {
@@ -97,7 +97,7 @@ export function isPointOnEntity(point: Coord, entity: Entity) {
 /**
  * dragArea should have it's coordinates based on world coordinate system
  */
-export function isEntityWithinSelection(entity: Entity, dragArea: DragArea): boolean {
+export function isEntityWithinSelection(entity: Entity, dragArea: Area): boolean {
 
   const left = Math.min(dragArea.origin.x, dragArea.end.x);
   const right = Math.max(dragArea.origin.x, dragArea.end.x);
@@ -139,7 +139,7 @@ export function trackHoveredEntity(ctx: TrackHoveredEntityCtx) {
   }
 }
 
-export function dragEntity(entity: Entity, entityStartWorldCoord: Coord, dragArea: DragArea) {
+export function dragEntity(entity: Entity, entityStartWorldCoord: Coord, dragArea: Area) {
   const dx = dragArea.origin.x - dragArea.end.x;
   const dy = dragArea.origin.y - dragArea.end.y;
 

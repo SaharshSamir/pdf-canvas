@@ -91,7 +91,6 @@ export default function Workspace({ docMeta }: Props) {
 
   useEffect(() => {
     editorRef.current?.createPageEntities(docMeta);
-
   }, [docMeta.pageCount])
 
 

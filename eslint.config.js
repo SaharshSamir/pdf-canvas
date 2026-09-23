@@ -20,6 +20,7 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': 'off',
+      'no-case-declarations': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {

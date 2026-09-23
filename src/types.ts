@@ -77,7 +77,7 @@ export type EditorContext = {
   setEditing: (isEditing: boolean) => void,
 }
 
-export type DragArea = {
+export type Area = {
   origin: Coord,
   end: Coord
 }
