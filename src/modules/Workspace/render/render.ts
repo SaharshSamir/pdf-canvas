@@ -54,13 +54,14 @@ function drawSelectBoundary<E extends Entity>(config: DrawConfig<E>) {
   };
 }
 
-function drawMultiSelectionBoundary(selectedEntities: Entity[], ctx: CanvasRenderingContext2D) {
+function drawMultiSelectionBoundary(selectedEntities: Entity[], ctx: CanvasRenderingContext2D, zoom: number) {
   let smallest_x = Infinity;
   let smallest_y = Infinity;
   let biggest_x = -Infinity;
   let biggest_y = -Infinity;
 
   console.log(selectedEntities);
+  const gap = SELECT_STROKE_GAP / zoom;
   for (const e of selectedEntities) {
     smallest_x = e.worldCoord.x < smallest_x ? e.worldCoord.x : smallest_x;
     smallest_y = e.worldCoord.y < smallest_y ? e.worldCoord.y : smallest_y;
@@ -73,7 +74,12 @@ function drawMultiSelectionBoundary(selectedEntities: Entity[], ctx: CanvasRende
   const width = biggest_x - smallest_x;
   const height = biggest_y - smallest_y;
   ctx.setLineDash([10, 10]);
-  ctx.strokeRect(smallest_x, smallest_y, width, height);
+  ctx.strokeRect(
+    smallest_x - gap * 2,
+    smallest_y - gap * 2,
+    width + gap * 2,
+    height + gap * 2
+  );
 }
 
 function drawCube(config: DrawConfig<CubeEntity>) {
@@ -205,7 +211,7 @@ export function render(
   }
   //draw multi-selection boundary for > 1 entities are selected
   if (selectedEntities.size > 1) {
-    drawMultiSelectionBoundary(selected_es, ctx);
+    drawMultiSelectionBoundary(selected_es, ctx, world.camera.zoom);
   }
   ctx.restore();
 
