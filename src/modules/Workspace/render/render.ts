@@ -77,8 +77,8 @@ function drawMultiSelectionBoundary(selectedEntities: Entity[], ctx: CanvasRende
   ctx.strokeRect(
     smallest_x - gap * 2,
     smallest_y - gap * 2,
-    width + gap * 2,
-    height + gap * 2
+    width + gap * 4,
+    height + gap * 4
   );
 }
 
