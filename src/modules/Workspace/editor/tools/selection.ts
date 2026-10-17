@@ -58,6 +58,7 @@ export function selection(): Strategy {
       dragState.dragOrigin = { ...ctx.mouseWorldPosRef.current };
       //select entity under mouse
       const hoveredEntityId = ctx.hoveredEntityIdRef.current;
+
       ctx.selectedEntities.clear();
       if (hoveredEntityId) {
         dragState.isDragging = "Entity";
@@ -88,8 +89,7 @@ export function selection(): Strategy {
         );
 
         ctx.world.entityStore.forEach(e => {
-          const res = isEntityWithinSelection(e, dragArea);
-          if (res) {
+          if (isEntityWithinSelection(e, dragArea)) {
             ctx.addToSelectedEntities([e.id]);
           } else {
             ctx.removeFromSelectedEntities(e.id);

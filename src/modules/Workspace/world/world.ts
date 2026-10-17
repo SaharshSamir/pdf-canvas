@@ -3,7 +3,7 @@ import { canvasToWorld, randomIdGenerator, type Size } from "../../../utils";
 
 interface WorldActions {
   /** returns the id of the entity **/
-  addEntity: (entity: Entity) => string,
+  addEntity: (entity: Entity, id?: string) => string,
   removeEntity: (id: string) => void,
   panCamera: (dx: number, dy: number) => void
   zoomTowardsCursor: (mousePos: Coord, ctx: CanvasRenderingContext2D, zoomFactor: number, camera: Camera) => void,
@@ -22,11 +22,10 @@ export function createWorld(): World {
   const entityStore = new Map<string, Entity>();
   const camera = { x: 0, y: 0, zoom: 1 };
 
-  const addEntity = (entity: Entity) => {
-    const id = randomIdGenerator();
-    entity.id = id;
+  const addEntity = (entity: Entity, id?: string) => {
+    entity.id = id ? id : randomIdGenerator();
     entityStore.set(entity.id, entity);
-    return id;
+    return entity.id;
   }
 
   const removeEntity = (id: string) => {

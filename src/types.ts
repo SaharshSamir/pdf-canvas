@@ -42,7 +42,12 @@ export interface TextEntity extends BaseEntity {
   inputSize?: number;
 }
 
-export type Entity = CubeEntity | PageEntity | TextEntity;
+export interface SelectionEntity extends BaseEntity {
+  type: "selection",
+  fillColor: string,
+}
+
+export type Entity = CubeEntity | PageEntity | TextEntity | SelectionEntity;
 
 
 export type DocMeta = {
